@@ -15,12 +15,11 @@ import java.net.URL;
 import static nsu.networks.snakes.view.ViewUtils.getPart;
 
 public class FindingGamePanel extends WindowPanel {
-    private static final String fileSeparator = System.getProperty("file.separator");
-    private FindingGameListener listener;
-    private ImageIcon empty;
-    private ImageIcon tick;
-    private int playerTypeWidth;
-    private int playerTypeHeight;
+    private final FindingGameListener listener;
+    private final ImageIcon empty;
+    private final ImageIcon tick;
+    private final int playerTypeWidth;
+    private final int playerTypeHeight;
     private final JButton humanType;
     private final JButton computerType;
     private final JButton viewerType;
@@ -32,7 +31,7 @@ public class FindingGamePanel extends WindowPanel {
     public String name;
 
     public FindingGamePanel(FindingGameListener listener, int width, int height){
-        super(fileSeparator + "FindingAGame.png", width, height);
+        super("/" + "FindingAGame.png", width, height);
         this.listener = listener;
         this.port = 1024 + (int) (Math.random() * 48126);
         this.name = "Player";
@@ -84,12 +83,12 @@ public class FindingGamePanel extends WindowPanel {
         this.playerTypeWidth = getPart(width, 0.03125);
         this.playerTypeHeight = getPart(height, 0.0555);
         this.playerType = SnakesProto.PlayerType.HUMAN;
-        this.isViewer = true;
-        this.empty = getImageButtonIcon(fileSeparator + "Empty.png", Color.GREEN);
-        this.tick = getImageButtonIcon(fileSeparator + "Tick.png", Color.BLUE);
-        this.humanType = initButtonForPlayerType(empty, getPart(width, 0.645), getPart(height, 0.377));
+        this.isViewer = false;
+        this.empty = getImageButtonIcon("/" + "Empty.png", Color.GREEN);
+        this.tick = getImageButtonIcon("/" + "Tick.png", Color.BLUE);
+        this.humanType = initButtonForPlayerType(tick, getPart(width, 0.645), getPart(height, 0.377));
         this.computerType = initButtonForPlayerType(empty, getPart(width, 0.645), getPart(height, 0.435));
-        this.viewerType = initButtonForPlayerType(tick, getPart(width, 0.645), getPart(height, 0.492));
+        this.viewerType = initButtonForPlayerType(empty, getPart(width, 0.645), getPart(height, 0.492));
         add(humanType);
         add(computerType);
         add(viewerType);

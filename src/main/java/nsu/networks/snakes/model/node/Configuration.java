@@ -1,12 +1,14 @@
-package nsu.networks.snakes.model;
+package nsu.networks.snakes.model.node;
+
+import nsu.networks.snakes.model.SnakesProto;
 
 public class Configuration {
-    static SnakesProto.GameConfig defaultConfigBuilder(){
+    public static SnakesProto.GameConfig defaultConfigBuilder(){
         return configBuilder(40,30,1,1,400,(float)0.1,100,800);
         //todo 1000 ms delay
     }
 
-    static SnakesProto.GameConfig configBuilder(int width, int height, int foodStatic, float foodPerPlayer, int stateDelay, float deadFoodProb,int pingDelay,int nodeTimeout){
+    public static SnakesProto.GameConfig configBuilder(int width, int height, int foodStatic, float foodPerPlayer, int stateDelay, float deadFoodProb, int pingDelay, int nodeTimeout){
         return SnakesProto.GameConfig.newBuilder()
                 .setWidth(width)
                 .setHeight(height)

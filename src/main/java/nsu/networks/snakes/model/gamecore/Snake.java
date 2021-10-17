@@ -7,14 +7,107 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Snake {
+    private final int playerId;
     private final int width;
     private final int height;
     private GameState.Snake snake;
     private final SnakeListener listener;
     private final List<Coord> snakeCoordinates;
 
-    public Direction getHeadDirection() {
-        return snake.getHeadDirection();
+    public Snake(SnakeListener listener, int width, int height, int playerId, Coord coordinateOfHead, Coord coordinateOfTail) {
+        this.listener = listener;
+        this.playerId = playerId;
+        this.width = width;
+        this.height = height;
+        this.snakeCoordinates = new LinkedList<>();
+
+        GameState.Snake.Builder builder = GameState.Snake.newBuilder();
+        builder.setState(GameState.Snake.SnakeState.ALIVE);
+        builder.setPlayerId(playerId);
+        builder.setHeadDirection(getDirection(coordinateOfTail, coordinateOfHead));
+        builder.addPoints(coordinateOfHead);
+        builder.addPoints(coordinateOfTail);
+        snake = builder.build();
+        listener.setSnakePoint(coordinateOfHead, playerId);
+        listener.setSnakePoint(coordinateOfTail, playerId);
+        snakeCoordinates.add(coordinateOfHead);
+        snakeCoordinates.add(coordinateOfTail);
+    }
+
+    public Snake(SnakeListener listener, GameState.Snake snake, int width, int height) {
+        this.listener = listener;
+        this.width = width;
+        this.height = height;
+        this.snakeCoordinates = new LinkedList<>();
+        this.snake = snake;
+        this.playerId = snake.getPlayerId();
+        parseSnakeCoordinatesFromProto();
+    }
+
+    //Update snake coordinates
+    private void parseSnakeCoordinatesFromProto() {
+        snakeCoordinates.clear();
+        Coord prevCoordinate = null;
+        for (Coord coordinate : snake.getPointsList()) {
+            if (snakeCoordinates.isEmpty()) {
+                snakeCoordinates.add(coordinate);
+                prevCoordinate = coordinate;
+                listener.setSnakePoint(prevCoordinate, playerId);
+                continue;
+            }
+            int offsetX = coordinate.getX();
+            int offsetY = coordinate.getY();
+            if (offsetX != 0) {
+                if (offsetX > 0) {
+                    for (int i = 1; i <= offsetX; i++) {
+                        prevCoordinate = GameCore.buildCoordinate(listener.addX(prevCoordinate.getX(), 1), prevCoordinate.getY());
+                        snakeCoordinates.add(prevCoordinate);
+                        listener.setSnakePoint(prevCoordinate, playerId);
+                    }
+                } else {
+                    for (int i = -1; i >= offsetX; i--) {
+                        prevCoordinate = GameCore.buildCoordinate(listener.subtractX(prevCoordinate.getX(), 1), prevCoordinate.getY());
+                        snakeCoordinates.add(prevCoordinate);
+                        listener.setSnakePoint(prevCoordinate, playerId);
+                    }
+                }
+            } else {
+                if (offsetY > 0) {
+                    for (int i = 1; i <= offsetY; i++) {
+                        prevCoordinate = GameCore.buildCoordinate(prevCoordinate.getX(), listener.addY(prevCoordinate.getY(), 1));
+                        snakeCoordinates.add(prevCoordinate);
+                        listener.setSnakePoint(prevCoordinate, playerId);
+                    }
+                } else {
+                    for (int i = -1; i >= offsetY; i--) {
+                        prevCoordinate = GameCore.buildCoordinate(prevCoordinate.getX(), listener.subtractY(prevCoordinate.getY(), 1));
+                        snakeCoordinates.add(prevCoordinate);
+                        listener.setSnakePoint(prevCoordinate, playerId);
+                    }
+                }
+            }
+        }
+    }
+
+
+    //Get snake coordinates for send
+    private Direction getDirection(Coord from, Coord to) {
+        int deltaX = to.getX() - from.getX();
+        if (Math.abs(deltaX) > 1) {
+            if (deltaX < 0) deltaX = 1;
+            else if (deltaX > 0) deltaX = -1;
+        }
+        int deltaY = to.getY() - from.getY();
+        if (Math.abs(deltaY) > 1) {
+            if (deltaY < 0) deltaY = 1;
+            else if (deltaY > 0) deltaY = -1;
+        }
+
+        if (deltaY == 1) return Direction.DOWN;
+        else if (deltaY == -1) return Direction.UP;
+        else if (deltaX == 1) return Direction.RIGHT;
+        else if (deltaX == -1) return Direction.LEFT;
+        return null;
     }
 
     private int getDeltaX(int currentCoordinate, int previousCoordinate, Direction direction) {
@@ -51,7 +144,7 @@ public class Snake {
         return 0;
     }
 
-    public List<Coord> getCoordinatesForProtocol() {
+    private List<Coord> getCoordinatesForProtocol() {
         List<Coord> coordinatesForProtocol = new LinkedList<>();
         Direction prevDirectionToTail = null;
         switch (snake.getHeadDirection()) {
@@ -73,32 +166,17 @@ public class Snake {
                 prevPoint = currPoint;
                 continue;
             }
-            Direction currDirectionToTail = null;
-            int deltaX = currPoint.getX() - prevPoint.getX();
-            if (Math.abs(deltaX) > 1) {
-                if (deltaX < 0) deltaX = 1;
-                else if (deltaX > 0) deltaX = -1;
-            }
-            int deltaY = currPoint.getY() - prevPoint.getY();
-            if (Math.abs(deltaY) > 1) {
-                if (deltaY < 0) deltaY = 1;
-                else if (deltaY > 0) deltaY = -1;
-            }
-
-            if (deltaY == 1) currDirectionToTail = Direction.DOWN;
-            else if (deltaY == -1) currDirectionToTail = Direction.UP;
-            else if (deltaX == 1) currDirectionToTail = Direction.RIGHT;
-            else if (deltaX == -1) currDirectionToTail = Direction.LEFT;
+            Direction currDirectionToTail = getDirection(prevPoint, currPoint);
 
             if (prevDirectionToTail != currDirectionToTail) {
                 assert currDirectionToTail != null;
-                coordinatesForProtocol.add(GameCore.buildCoordinate(getDeltaX(prevPoint.getX(),lastAddedCoordinate.getX(),prevDirectionToTail),
-                        getDeltaY(prevPoint.getY(),lastAddedCoordinate.getY(),prevDirectionToTail)));
+                coordinatesForProtocol.add(GameCore.buildCoordinate(getDeltaX(prevPoint.getX(), lastAddedCoordinate.getX(), prevDirectionToTail),
+                        getDeltaY(prevPoint.getY(), lastAddedCoordinate.getY(), prevDirectionToTail)));
                 lastAddedCoordinate = prevPoint;
             }
             if (coordinationNum == iterCounter) {
-                coordinatesForProtocol.add(GameCore.buildCoordinate(getDeltaX(currPoint.getX(),lastAddedCoordinate.getX(),currDirectionToTail),
-                        getDeltaY(currPoint.getY(),lastAddedCoordinate.getY(),currDirectionToTail)));
+                coordinatesForProtocol.add(GameCore.buildCoordinate(getDeltaX(currPoint.getX(), lastAddedCoordinate.getX(), currDirectionToTail),
+                        getDeltaY(currPoint.getY(), lastAddedCoordinate.getY(), currDirectionToTail)));
             }
             prevDirectionToTail = currDirectionToTail;
             prevPoint = currPoint;
@@ -111,84 +189,8 @@ public class Snake {
         return snake;
     }
 
-    public int getLength(){
-        return snakeCoordinates.size();
-    }
 
-    private void parseSnakeCoordinatesFromProto() {
-        snakeCoordinates.clear();
-        Coord prevCoordinate = null;
-        for (Coord coordinate : snake.getPointsList()) {
-            if (snakeCoordinates.isEmpty()) {
-                snakeCoordinates.add(coordinate);
-                prevCoordinate = coordinate;
-                listener.setSnakePoint(prevCoordinate);
-                continue;
-            }
-            int offsetX = coordinate.getX();
-            int offsetY = coordinate.getY();
-            if (offsetX != 0) {
-                if (offsetX > 0) {
-                    for (int i = 1; i <= offsetX; i++) {
-                        prevCoordinate = GameCore.buildCoordinate(listener.addX(prevCoordinate.getX(), 1), prevCoordinate.getY());
-                        snakeCoordinates.add(prevCoordinate);
-                        listener.setSnakePoint(prevCoordinate);
-                    }
-                } else {
-                    for (int i = -1; i >= offsetX; i--) {
-                        prevCoordinate = GameCore.buildCoordinate(listener.subtractX(prevCoordinate.getX(), 1), prevCoordinate.getY());
-                        snakeCoordinates.add(prevCoordinate);
-                        listener.setSnakePoint(prevCoordinate);
-                    }
-                }
-            } else {
-                if (offsetY > 0) {
-                    for (int i = 1; i <= offsetY; i++) {
-                        prevCoordinate = GameCore.buildCoordinate(prevCoordinate.getX(), listener.addY(prevCoordinate.getY(), 1));
-                        snakeCoordinates.add(prevCoordinate);
-                        listener.setSnakePoint(prevCoordinate);
-                    }
-                } else {
-                    for (int i = -1; i >= offsetY; i--) {
-                        prevCoordinate = GameCore.buildCoordinate(prevCoordinate.getX(), listener.subtractY(prevCoordinate.getY(), 1));
-                        snakeCoordinates.add(prevCoordinate);
-                        listener.setSnakePoint(prevCoordinate);
-                    }
-                }
-            }
-        }
-    }
-
-    public void updateSnake(GameState.Snake snake) {
-        this.snake = snake;
-        parseSnakeCoordinatesFromProto();
-    }
-
-    public Snake(SnakeListener listener, GameState.Snake snake, int width, int height) {
-        this.listener = listener;
-        this.width = width;
-        this.height = height;
-        this.snakeCoordinates = new LinkedList<>();
-        updateSnake(snake);
-    }
-
-    public Snake(SnakeListener listener, int width, int height, int playerId, Direction direction, Coord coordinateOfHead) {
-        this.listener = listener;
-        this.width = width;
-        this.height = height;
-        this.snakeCoordinates = new LinkedList<>();
-
-        GameState.Snake.Builder builder = GameState.Snake.newBuilder();
-        builder.setState(GameState.Snake.SnakeState.ALIVE);
-        builder.setPlayerId(playerId);
-        builder.setHeadDirection(direction);
-        builder.addPoints(coordinateOfHead);
-        snake = builder.build();
-        listener.setSnakePoint(coordinateOfHead);
-        listener.updateField();
-        snakeCoordinates.add(coordinateOfHead);
-    }
-
+    //Make new step
     private void addHead(Coord coordinate) {
         snakeCoordinates.add(0, coordinate);
     }
@@ -205,6 +207,34 @@ public class Snake {
         return snakeCoordinates.get(snakeCoordinates.size() - 1);
     }
 
+    private void setMove(Coord newPoint) {
+        PointType type = listener.checkCoordinate(newPoint.getX(), newPoint.getY());
+        switch (type) {
+            case EMPTY -> {
+                listener.setSnakePoint(newPoint, playerId);
+                addHead(newPoint);
+                listener.deleteSnakePoint(getTailCoordinate());
+                deleteTail();
+            }
+            case FOOD -> {
+                listener.setSnakePoint(newPoint, playerId);
+                snakeCoordinates.add(0, newPoint);
+            }
+            case SNAKE -> {
+                listener.snakeIsDead(snake.getPlayerId());
+            }
+        }
+    }
+
+    private void repeatLastStep() {
+        switch (snake.getHeadDirection()) {
+            case LEFT -> makeLeftMove();
+            case RIGHT -> makeRightMove();
+            case DOWN -> makeDownMove();
+            case UP -> makeUpMove();
+        }
+    }
+
     public void makeRightMove() {
         if (snake.getHeadDirection() != Direction.LEFT || snakeCoordinates.size() == 1) {
             Coord head = getHeadCoordinate();
@@ -216,6 +246,8 @@ public class Snake {
             }
             snake = snake.toBuilder().setHeadDirection(Direction.RIGHT).build();
             setMove(newPoint);
+        } else {
+            repeatLastStep();
         }
     }
 
@@ -230,6 +262,8 @@ public class Snake {
             }
             snake = snake.toBuilder().setHeadDirection(Direction.LEFT).build();
             setMove(newPoint);
+        } else {
+            repeatLastStep();
         }
     }
 
@@ -244,6 +278,8 @@ public class Snake {
             }
             snake = snake.toBuilder().setHeadDirection(Direction.UP).build();
             setMove(newPoint);
+        } else {
+            repeatLastStep();
         }
     }
 
@@ -258,26 +294,12 @@ public class Snake {
             }
             snake = snake.toBuilder().setHeadDirection(Direction.DOWN).build();
             setMove(newPoint);
+        } else {
+            repeatLastStep();
         }
     }
 
-    private void setMove(Coord newPoint) {
-        PointType type = listener.checkCoordinate(newPoint);
-        switch (type) {
-            case EMPTY -> {
-                listener.setSnakePoint(newPoint);
-                addHead(newPoint);
-                listener.deleteSnakePoint(getTailCoordinate());
-                deleteTail();
-            }
-            case FOOD -> {
-                listener.setSnakePoint(newPoint);
-                snakeCoordinates.add(0, newPoint);
-            }
-            case SNAKE -> {
-                listener.snakeIsDead(snake.getPlayerId());
-            }
-        }
-        //listener.updateField();
+    public Direction getHeadDirection() {
+        return snake.getHeadDirection();
     }
 }

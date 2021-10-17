@@ -1,6 +1,5 @@
 package nsu.networks.snakes.model.net.unicast;
 
-import nsu.networks.snakes.model.Node;
 import nsu.networks.snakes.model.SnakesProto;
 
 import java.io.IOException;
@@ -12,53 +11,55 @@ import java.util.Set;
 public class UnicastReceiver extends Thread {
     private final Set<Long> acceptedMessages;
     private final DatagramSocket socket;
-    private final Node node;
+    private final UnicastReceiverListener listener;
 
-    public UnicastReceiver(DatagramSocket socket, Set<Long> acceptedMessages, Node node) {
+    public UnicastReceiver(DatagramSocket socket, Set<Long> acceptedMessages, UnicastReceiverListener listener) {
         this.acceptedMessages = acceptedMessages;
         this.socket = socket;
-        this.node = node;
+        this.listener = listener;
     }
 
     public void messageTypeHandler(SnakesProto.GameMessage msg, InetAddress address, int port) {
-        SnakesProto.GamePlayer messageSender = node.getGamePLayerById(msg.getSenderId());
+        int messageSenderId = msg.getSenderId();
         long messageSequence = msg.getMsgSeq();
         switch (msg.getTypeCase()) {
             case PING -> {
-                node.acceptMessage(messageSender, messageSequence);
-                System.out.println("PING");
+                listener.acceptMessage(messageSenderId, messageSequence);
+                System.out.println("PING id:" + messageSenderId + "seq=" + messageSequence);
             }
             case STEER -> {
-                node.acceptMessage(messageSender, messageSequence);
-                node.receiveSteerMsg(msg.getSteer().getDirection(), msg.getSenderId());
-                System.out.println("STEER");
+                listener.acceptMessage(messageSenderId, messageSequence);
+                listener.receiveSteerMsg(msg.getSteer().getDirection(), messageSenderId);
+                System.out.println("STEER id:" + messageSenderId + "seq=" + messageSequence);
             }
             case ACK -> {
                 synchronized (acceptedMessages) {
-                    acceptedMessages.add(messageSequence);
-                    System.out.println("ACK");
-                    node.checkIdSetting(msg.getReceiverId());
-                    System.out.println("Accepted: " + messageSequence);
+                    listener.receiveAckMsg(msg.getReceiverId());
+                    System.out.println("ACK id:" + messageSenderId + "seq=" + messageSequence);
                 }
             }
             case STATE -> {
-                node.acceptMessage(messageSender, messageSequence);
-                node.receiveGameStateMsg(msg.getState().getState(), address.getHostAddress());
-                System.out.println("STATE");
+                listener.acceptMessage(messageSenderId, messageSequence);
+                listener.receiveGameStateMsg(msg.getState().getState(), address.getHostAddress());
+                System.out.println("STATE id:" + messageSenderId + "seq=" + messageSequence);
             }
             case JOIN -> {
                 SnakesProto.GameMessage.JoinMsg joinMsg = msg.getJoin();
-                int newPlayerId = node.addPlayer(joinMsg.getName(), address.getHostAddress(), port, joinMsg.getOnlyView() ? SnakesProto.NodeRole.VIEWER : SnakesProto.NodeRole.NORMAL, joinMsg.getPlayerType());
-                node.acceptMessage(node.getGamePLayerById(newPlayerId), messageSequence);
-                System.out.println("JOIN");
+                int newPlayerId = listener.receiveJoinMsg(joinMsg.getName(),
+                        address.getHostAddress(),
+                        port,
+                        joinMsg.getOnlyView() ? SnakesProto.NodeRole.VIEWER : SnakesProto.NodeRole.NORMAL,
+                        joinMsg.getPlayerType());
+                listener.acceptMessage(newPlayerId, messageSequence);
+                System.out.println("JOIN id:" + messageSenderId + "seq=" + messageSequence);
             }
             case ERROR -> {
-                node.acceptMessage(messageSender, messageSequence);
-                System.out.println("ERROR");
+                listener.acceptMessage(messageSenderId, messageSequence);
+                System.out.println("ERROR id:" + messageSenderId + "seq=" + messageSequence);
             }
             case ROLE_CHANGE -> {
-                node.acceptMessage(messageSender, messageSequence);
-                System.out.println("ROLE_CHANGE");
+                listener.acceptMessage(messageSenderId, messageSequence);
+                System.out.println("ROLE_CHANGE id:" + messageSenderId + "seq=" + messageSequence);
             }
         }
     }
@@ -67,7 +68,7 @@ public class UnicastReceiver extends Thread {
     public void run() {
         try {
             System.out.println("Unicast Receiver started");
-            while (true) {
+            while (!isInterrupted()) {
                 byte[] buffer = new byte[256];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 //System.out.println("Unicast Receiver ready to receive");

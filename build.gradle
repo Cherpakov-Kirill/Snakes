@@ -34,5 +34,6 @@ test {
 }
 
 jar {
-    manifest.attributes("Main-Class": "Main");
+    manifest.attributes("Main-Class": "Main")
+    manifest.attributes("Class-Path": "protobuf-java-3.14.0.jar")
 }

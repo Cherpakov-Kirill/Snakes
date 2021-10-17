@@ -7,9 +7,9 @@ import java.net.*;
 
 public class MulticastReceiver extends Thread {
     private MulticastSocket socket = null;
-    private MulticastListener listener;
+    private final MulticastReceiverListener listener;
 
-    public MulticastReceiver(MulticastListener listener){
+    public MulticastReceiver(MulticastReceiverListener listener){
         this.listener = listener;
     }
 

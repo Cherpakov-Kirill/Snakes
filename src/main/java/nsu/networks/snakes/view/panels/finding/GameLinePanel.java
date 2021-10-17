@@ -11,7 +11,7 @@ public class GameLinePanel extends WindowPanel {
     private final String filename;
 
     public GameLinePanel(JoiningGamePanel joiningGamePanel, String filename, int width, int height, int posX, int posY, String data){
-        super(System.getProperty("file.separator") + filename,width,height);
+        super("/" + filename,width,height);
         this.filename = filename;
         this.joiningGamePanel = joiningGamePanel;
         Dimension size = this.getPreferredSize();
@@ -26,10 +26,10 @@ public class GameLinePanel extends WindowPanel {
     }
 
     public void makeChosenBackground() {
-        this.setImageIcon(System.getProperty("file.separator") + filename.substring(0, filename.indexOf('.')) + "Chosen.png");
+        this.setImageIcon("/" + filename.substring(0, filename.indexOf('.')) + "Chosen.png");
     }
 
     public void makeDefaultBackground() {
-        this.setImageIcon(System.getProperty("file.separator") + filename);
+        this.setImageIcon("/" + filename);
     }
 }

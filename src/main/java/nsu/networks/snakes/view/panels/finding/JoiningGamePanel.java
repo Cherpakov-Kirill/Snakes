@@ -12,7 +12,6 @@ import java.util.Map;
 import static nsu.networks.snakes.view.ViewUtils.getPart;
 
 public class JoiningGamePanel extends WindowPanel {
-    private static final String fileSeparator = System.getProperty("file.separator");
     private final JoiningGameListener listener;
     private final JScrollPane scrollPane;
     private final Map<String, GameLinePanel> gamePanelsMap;
@@ -23,7 +22,7 @@ public class JoiningGamePanel extends WindowPanel {
     private final int heightWindow;
 
     public JoiningGamePanel(JoiningGameListener listener, int width, int height) {
-        super(fileSeparator + "GameListForConnecting.png", width, height);
+        super("/" + "GameListForConnecting.png", width, height);
         this.listener = listener;
         this.widthWindow = width;
         this.heightWindow = height;

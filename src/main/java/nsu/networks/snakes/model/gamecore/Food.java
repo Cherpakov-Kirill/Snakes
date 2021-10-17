@@ -40,7 +40,6 @@ public class Food {
             notAddedFood--;
             addNewFood(); //if you have not place on field then this func adds 1 food to notAddedFood
         }
-        listener.updateField();
     }
 
     public void foodWasEaten(int x, int y) {
@@ -85,7 +84,7 @@ public class Food {
         while (!success) {
             int randX = (int) (Math.random() * width);
             int randY = (int) (Math.random() * height);
-            if (listener.getPointFormField(randX, randY) != '#') {
+            if (listener.checkCoordinate(randX, randY) == PointType.EMPTY) {
                 x = randX;
                 y = randY;
                 success = true;

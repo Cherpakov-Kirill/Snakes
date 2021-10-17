@@ -1,4 +1,4 @@
-package nsu.networks.snakes.model;
+package nsu.networks.snakes.model.node;
 
 import java.util.List;
 

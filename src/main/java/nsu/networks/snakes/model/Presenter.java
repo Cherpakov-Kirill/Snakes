@@ -1,7 +1,8 @@
 package nsu.networks.snakes.model;
 
-import nsu.networks.snakes.model.net.multicast.MulticastReceiver;
-import nsu.networks.snakes.model.net.unicast.UnicastReceiver;
+import nsu.networks.snakes.model.node.Configuration;
+import nsu.networks.snakes.model.node.Node;
+import nsu.networks.snakes.model.node.NodeListener;
 import nsu.networks.snakes.view.View;
 
 import java.util.List;
@@ -16,43 +17,39 @@ public class Presenter implements NodeListener {
         this.view.attachPresenter(this);
     }
 
-    public void launchTheGame() {
+    //Launch Use Interface from psv main()
+    public void launchUI() {
         view.changeVisible(true);
     }
 
-    private void initNode(String name, int port, SnakesProto.PlayerType type) {
+    //Find a game in LAN
+    public void findTheGame(String name, int port, SnakesProto.PlayerType type) {
         node = new Node(this, name, port, type);
     }
 
-    public void findTheGame(String name, int port, SnakesProto.PlayerType type) {
-        initNode(name, port, type);
+    //Join the game in LAN by gameKey from gamesList
+    public void joinTheGame(SnakesProto.NodeRole nodeRole, String gameKey){
+        node.joinTheGame(gameKey, nodeRole);
     }
 
-    public void joinTheGame(SnakesProto.NodeRole nodeRole, String gameKey){
-        node.changeNodeRole(nodeRole);
-        node.joinTheGame(gameKey);
+    //Create new game
+    private void createNewGame(SnakesProto.GameConfig config, String name, int port, SnakesProto.PlayerType type) {
+        node = new Node(this, name, port, type);
+        node.createNewGame(config,1);
     }
 
     public void startTheGame(String name, int port, SnakesProto.PlayerType type) {
         SnakesProto.GameConfig config = Configuration.defaultConfigBuilder();
-        initNode(name,port,type);
-        node.setStartNodeParameters(config,1);
-        node.changeNodeRole(SnakesProto.NodeRole.MASTER);
-        System.out.println("Game was started");
+        createNewGame(config,name,port,type);
     }
 
     public void startTheGame(String name, int port, SnakesProto.PlayerType type, int width, int height, int foodStatic, float foodPerPlayer, int stateDelay, float deadFoodProb, int pingDelay, int nodeTimeout) {
         SnakesProto.GameConfig config = Configuration.configBuilder(width, height, foodStatic, foodPerPlayer, stateDelay, deadFoodProb, pingDelay, nodeTimeout);
-        initNode(name,port,type);
-        node.setStartNodeParameters(config,1);
-        node.changeNodeRole(SnakesProto.NodeRole.MASTER);
-        System.out.println("Game was started");
+        createNewGame(config,name,port,type);
     }
 
-    public void openFieldWindow(int widthField, int heightField){
-        view.openField(widthField,heightField);
-    }
 
+    //Keyboard action listener
     public void makeRightMove() {
         node.setKeyboardAction(SnakesProto.Direction.RIGHT);
     }
@@ -75,6 +72,11 @@ public class Presenter implements NodeListener {
             client.shutdownWorking();
             client = null;
         }*/
+    }
+
+    @Override
+    public void openFieldWindow(int widthField, int heightField){
+        view.openField(widthField,heightField);
     }
 
     @Override

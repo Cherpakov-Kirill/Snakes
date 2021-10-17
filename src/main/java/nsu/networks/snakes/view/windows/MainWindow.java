@@ -12,7 +12,7 @@ import nsu.networks.snakes.view.panels.finding.FindingGameListener;
 import nsu.networks.snakes.view.panels.finding.FindingGamePanel;
 import nsu.networks.snakes.view.panels.finding.JoiningGameListener;
 import nsu.networks.snakes.view.panels.finding.JoiningGamePanel;
-import nsu.networks.snakes.view.panels.game.Field;
+import nsu.networks.snakes.view.panels.game.FieldPanel;
 import nsu.networks.snakes.view.panels.startMenu.StartListener;
 import nsu.networks.snakes.view.panels.startMenu.StartPanel;
 
@@ -38,11 +38,11 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
     private FindingGamePanel findingGamePanel;
     private JoiningGamePanel joiningGamePanel;
     private ConfigurationSettingsPanel configurationSettingsPanel;
-    private Field field;
+    private FieldPanel fieldPanel;
 
     public MainWindow() {
         super(NAME);
-        this.widthWindow = 1280;
+        this.widthWindow = 896;
         this.heightWindow = widthWindow / 16 * 9;
         this.setFocusable(true);
         this.setResizable(false);
@@ -85,8 +85,8 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
         this.addKeyListener(new KeyboardController(presenter));
         this.widthField = widthField;
         this.heightField = heightField;
-        field = new Field(widthWindow, heightWindow, widthField, heightField);
-        setContentOnFrame(field);
+        fieldPanel = new FieldPanel(widthWindow, heightWindow, widthField, heightField);
+        setContentOnFrame(fieldPanel);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
 
     @Override
     public void updateField(String fieldString) {
-        field.updateField(fieldString);
+        fieldPanel.updateField(fieldString);
     }
 
     @Override
@@ -169,7 +169,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
             } else {
                 widthField = 40;
                 heightField = 30;
-                field = new Field(widthWindow, heightWindow, widthField, heightField);
+                fieldPanel = new FieldPanel(widthWindow, heightWindow, widthField, heightField);
                 presenter.startTheGame(creatingGamePanel.name,
                         creatingGamePanel.port,
                         creatingGamePanel.playerType);

@@ -1,7 +1,6 @@
 package nsu.networks.snakes.model.net.multicast;
 
 import nsu.networks.snakes.model.net.messages.MessageBuilder;
-import nsu.networks.snakes.model.Node;
 import nsu.networks.snakes.model.SnakesProto;
 
 import java.io.IOException;
@@ -12,28 +11,30 @@ import java.net.InetAddress;
 public class MulticastPublisher extends Thread {
     private DatagramSocket socket = null;
 
-    private final Node node;
-    private int id;
+    private final MulticastPublisherListener listener;
+    private final int nodeId;
     private boolean opportunityToJoin;
     private long messageSequence;
-    private SnakesProto.GameConfig config;
-    private SnakesProto.GamePlayers players;
+    private final SnakesProto.GameConfig config;
+    private final SnakesProto.GamePlayers players;
 
-    public MulticastPublisher(Node node) {
-        this.node = node;
-        updateData();
+    public MulticastPublisher(MulticastPublisherListener listener, int nodeId, SnakesProto.GameConfig config, SnakesProto.GamePlayers players) {
+        this.listener = listener;
+        this.nodeId = nodeId;
+        this.config = config;
+        this.players = players;
     }
 
     private void updateData() {
-        id = node.getId();
-        config = node.getGameConfig();
-        players = node.getGamePlayers();
-        opportunityToJoin = node.getOpportunityToJoin();
-        messageSequence = node.getMessageSequence();
+        opportunityToJoin = listener.getOpportunityToJoin();
+        messageSequence = listener.getMessageSequence();
     }
 
     private byte[] getMessage() {
-        SnakesProto.GameMessage message = MessageBuilder.announcementMsgBuilder(players,config,opportunityToJoin,messageSequence,id);
+        SnakesProto.GameMessage message;
+        synchronized (players){
+            message = MessageBuilder.announcementMsgBuilder(players,config,opportunityToJoin,messageSequence,nodeId);
+        }
         return message.toByteArray();
     }
 

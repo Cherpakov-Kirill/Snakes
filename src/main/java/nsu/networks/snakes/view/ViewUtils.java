@@ -11,8 +11,6 @@ public class ViewUtils {
         return (int)(((double)param)*part);
     }
 
-
-
     public static JButton initButton(int width, int height, int posX, int posY, ActionListener listener) {
         JButton button = new JButton();
         button.setPreferredSize(new Dimension(width, height));

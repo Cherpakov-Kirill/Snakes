@@ -34,10 +34,11 @@ public class UnicastSender {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                //System.out.println("Sender try to acceptMessage");
                 synchronized (acceptedMessages) {
-                    System.out.println(acceptedMessages.contains(message.getMsgSeq()));
-                    if (acceptedMessages.contains(message.getMsgSeq())) break;
+                    if (acceptedMessages.contains(message.getMsgSeq())) {
+                        System.out.println("Sender found accepted message. Break.");
+                        break;
+                    } else System.out.println("Sender did not find accepted message.");
                 }
                 if (new Date().getTime() - timeOfStart.getTime() > config.getNodeTimeoutMs()) {
                     System.out.println("Node " + player.getIpAddress() + ":" + player.getPort() + " was disconnected");
@@ -64,7 +65,7 @@ public class UnicastSender {
         @Override
         public void run() {
             try {
-                //System.out.println("Unicast Sender is sending a " + message.getTypeCase() + " message to " + player.getIpAddress() + ":" + player.getPort());
+                System.out.println("Unicast Sender is sending a " + message.getTypeCase() + " message to " + player.getIpAddress() + ":" + player.getPort());
                 byte[] buffer = message.toByteArray();
                 InetAddress ip = InetAddress.getByName(player.getIpAddress());
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, ip, player.getPort());

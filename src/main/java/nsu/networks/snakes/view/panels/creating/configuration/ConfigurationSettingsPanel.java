@@ -80,7 +80,7 @@ public class ConfigurationSettingsPanel extends WindowPanel {
     }
 
     public ConfigurationSettingsPanel(ConfigurationSettingsListener listener, int width, int height) {
-        super(System.getProperty("file.separator") + "ConfigurationSettings.png", width, height);
+        super("/" + "ConfigurationSettings.png", width, height);
         this.listener = listener;
         this.isSaved = false;
         this.width = width;
