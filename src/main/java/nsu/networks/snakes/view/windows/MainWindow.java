@@ -3,6 +3,7 @@ package nsu.networks.snakes.view.windows;
 import nsu.networks.snakes.controller.KeyboardController;
 import nsu.networks.snakes.model.Presenter;
 import nsu.networks.snakes.model.SnakesProto;
+import nsu.networks.snakes.model.node.Configuration;
 import nsu.networks.snakes.view.View;
 import nsu.networks.snakes.view.panels.creating.CreatingGameListener;
 import nsu.networks.snakes.view.panels.creating.CreatingGamePanel;
@@ -139,20 +140,13 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
 
     @Override
     public void startTheGame() {
-        //this.addKeyListener(new KeyboardController(presenter));
         if (configurationSettingsPanel == null) {
-            /*widthField = 40;
-            heightField = 30;
-            field = new Field(widthWindow, heightWindow, widthField, heightField);*/
-            openField(40,30);
+            openField(Configuration.width,Configuration.height);
             presenter.startTheGame(creatingGamePanel.name,
                     creatingGamePanel.port,
                     creatingGamePanel.playerType);
         } else {
             if (configurationSettingsPanel.isSaved) {
-                /*widthField = configurationSettingsPanel.widthGame;
-                heightField = configurationSettingsPanel.heightGame;
-                field = new Field(widthWindow, heightWindow, widthField, heightField);*/
                 openField(configurationSettingsPanel.widthGame,configurationSettingsPanel.heightGame);
                 presenter.startTheGame(creatingGamePanel.name,
                         creatingGamePanel.port,

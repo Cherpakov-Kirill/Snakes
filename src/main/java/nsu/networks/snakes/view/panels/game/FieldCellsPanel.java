@@ -9,7 +9,7 @@ import java.net.URL;
 
 import static nsu.networks.snakes.view.ViewUtils.getPart;
 
-public class FieldCellsPanel extends JPanel{
+public class FieldCellsPanel extends JPanel {
     public ImageIcon aliveOtherSnake;
     public ImageIcon aliveNodeSnake;
     public ImageIcon food;
@@ -19,11 +19,13 @@ public class FieldCellsPanel extends JPanel{
     private final int fieldWidth;
     private final int fieldHeight;
     private final int cellSize;
-    private final JButton[][] cells;
+    private final CellPanel[][] cells;
+    private String fieldString;
+    private final int cellsNum;
 
-    public FieldCellsPanel(int cellSize, int widthField, int heightField){
-        this.width = cellSize*widthField;
-        this.height = cellSize*heightField;
+    public FieldCellsPanel(int cellSize, int widthField, int heightField) {
+        this.width = cellSize * widthField;
+        this.height = cellSize * heightField;
         this.fieldWidth = widthField;
         this.fieldHeight = heightField;
         this.cellSize = cellSize;
@@ -31,50 +33,45 @@ public class FieldCellsPanel extends JPanel{
         setLayout(new GridLayout(heightField, widthField));
         this.setFocusable(true);
         setPreferredSize(new Dimension(width, height));
-        this.setBounds(getPart(width,0.05), getPart(width,0.05), width, height);
+        this.setBounds(getPart(width, 0.05), getPart(width, 0.05), width, height);
 
 
+        this.aliveOtherSnake = getImageIcon("/" + "AliveOtherSnake.png", Color.GRAY);
+        this.aliveNodeSnake = getImageIcon("/" + "AliveNodeSnake.png", Color.GREEN);
+        this.food = getImageIcon("/" + "Food.png", Color.BLUE);
+        this.empty = getImageIcon("/" + "EmptyField.png", Color.WHITE);
 
-        this.aliveOtherSnake = getImageButtonIcon("/" + "AliveOtherSnake.png", Color.GRAY);
-        this.aliveNodeSnake = getImageButtonIcon("/" + "AliveNodeSnake.png", Color.GREEN);
-        this.food = getImageButtonIcon("/" + "Food.png", Color.BLUE);
-        this.empty = getImageButtonIcon("/" + "EmptyField.png", Color.WHITE);
-
-        cells = new JButton[fieldHeight][fieldWidth];
+        cells = new CellPanel[fieldHeight][fieldWidth];
         for (int y = 0; y < fieldHeight; y++) {
             for (int x = 0; x < fieldWidth; x++) {
-                cells[y][x] = initButtonForField(empty);
+                cells[y][x] = new CellPanel(cellSize, empty);
                 this.add(cells[y][x]);
             }
         }
-        updateField("-".repeat(fieldHeight * fieldWidth));
+        fieldString = "-".repeat(fieldHeight * fieldWidth);
+        cellsNum = widthField * heightField;
+        updateField(fieldString);
     }
 
-
-
-    public JButton initButtonForField(ImageIcon icon) {
-        JButton button = new JButton();
-        button.setPreferredSize(new Dimension(cellSize, cellSize));
-        button.setIcon(icon);
-        button.setFocusPainted(false);
-        button.setContentAreaFilled(false);
-        return button;
-    }
-
-    public void updateField(String field) {
-        for (int y = 0; y < fieldHeight; y++) {
-            for (int x = 0; x < fieldWidth; x++) {
-                switch (field.charAt(y * fieldWidth + x)) {
-                    case '-', '.' -> cells[y][x].setIcon(empty);
-                    case '#' -> cells[y][x].setIcon(aliveOtherSnake);
-                    case '&' -> cells[y][x].setIcon(aliveNodeSnake);
-                    case '*' -> cells[y][x].setIcon(food);
+    public void updateField(String newFieldString) {
+        for (int i = 0; i < cellsNum; i++) {
+            char newSym = newFieldString.charAt(i);
+            char prevSym = fieldString.charAt(i);
+            if (newSym != prevSym) {
+                int y = i / fieldWidth;
+                int x = i % fieldWidth;
+                switch (newSym) {
+                    case '-', '.' -> cells[y][x].changeBackground(empty);
+                    case '#' -> cells[y][x].changeBackground(aliveOtherSnake);
+                    case '&' -> cells[y][x].changeBackground(aliveNodeSnake);
+                    case '*' -> cells[y][x].changeBackground(food);
                 }
             }
         }
+        fieldString = newFieldString;
     }
 
-    private ImageIcon getImageButtonIcon(String fileDirectory, Color colorForButton) {
+    private ImageIcon getImageIcon(String fileDirectory, Color colorForButton) {
         URL file = MainWindow.class.getResource(fileDirectory);
         if (file == null) {
             BufferedImage defaultBackground = new BufferedImage(cellSize, cellSize, BufferedImage.TYPE_INT_RGB);

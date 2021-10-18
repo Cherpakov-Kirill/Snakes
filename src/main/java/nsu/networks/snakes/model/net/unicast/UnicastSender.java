@@ -9,11 +9,13 @@ import java.net.InetAddress;
 import java.util.*;
 
 public class UnicastSender {
+    private final UnicastSenderListener listener;
     private final SnakesProto.GameConfig config;
     private final Set<Long> acceptedMessages;
     private final DatagramSocket socket;
 
-    public UnicastSender(DatagramSocket socket, SnakesProto.GameConfig config, Set<Long> acceptedMessages) {
+    public UnicastSender(UnicastSenderListener listener, DatagramSocket socket, SnakesProto.GameConfig config, Set<Long> acceptedMessages) {
+        this.listener = listener;
         this.config = config;
         this.acceptedMessages = acceptedMessages;
         this.socket = socket;
@@ -30,7 +32,7 @@ public class UnicastSender {
             Date timeOfStart = new Date();
             while (true) {
                 try {
-                    Thread.sleep(30);
+                    Thread.sleep(40);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -38,10 +40,11 @@ public class UnicastSender {
                     if (acceptedMessages.contains(message.getMsgSeq())) {
                         System.out.println("Sender found accepted message. Break.");
                         break;
-                    } else System.out.println("Sender did not find accepted message.");
+                    } else System.out.println("Sender did not find accepted message. seq = " + message.getMsgSeq());
                 }
                 if (new Date().getTime() - timeOfStart.getTime() > config.getNodeTimeoutMs()) {
                     System.out.println("Node " + player.getIpAddress() + ":" + player.getPort() + " was disconnected");
+                    listener.disconnectPlayer(player.getId());
                     ///тут надо поменять мастера на депути и слать пакеты ему
                     //core.deleteNode(receiver);
                     break;
@@ -65,7 +68,7 @@ public class UnicastSender {
         @Override
         public void run() {
             try {
-                System.out.println("Unicast Sender is sending a " + message.getTypeCase() + " message to " + player.getIpAddress() + ":" + player.getPort());
+                System.out.println("Unicast Sender is sending a " + message.getTypeCase() + " message seq = " + message.getMsgSeq() + " to " + player.getIpAddress() + ":" + player.getPort());
                 byte[] buffer = message.toByteArray();
                 InetAddress ip = InetAddress.getByName(player.getIpAddress());
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, ip, player.getPort());

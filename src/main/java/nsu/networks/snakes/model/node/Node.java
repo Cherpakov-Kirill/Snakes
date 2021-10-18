@@ -12,6 +12,7 @@ import nsu.networks.snakes.model.net.multicast.MulticastReceiver;
 import nsu.networks.snakes.model.net.unicast.UnicastReceiver;
 import nsu.networks.snakes.model.net.unicast.UnicastReceiverListener;
 import nsu.networks.snakes.model.net.unicast.UnicastSender;
+import nsu.networks.snakes.model.net.unicast.UnicastSenderListener;
 
 import static nsu.networks.snakes.model.net.messages.AnnouncementMsg.makeKeyForAnnouncementMsg;
 
@@ -19,7 +20,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.*;
 
-public class Node implements GameCoreListener, MulticastPublisherListener, MulticastReceiverListener, UnicastReceiverListener, ActionUpdaterListener {
+public class Node implements GameCoreListener, MulticastPublisherListener, MulticastReceiverListener, UnicastReceiverListener, UnicastSenderListener, ActionUpdaterListener {
     private final NodeListener listener;
     private int id;
     private final String name;
@@ -40,7 +41,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
 
     private GameCore gameCore;
 
-    private Set<Long> acceptedMessages;
+    private final Set<Long> acceptedMessages;
     private final Map<String, AnnouncementMsg> announcementMsgMap;
     private DatagramSocket socket;
     private MulticastPublisher inviteSender;
@@ -71,7 +72,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
         }
         this.announcementMsgMap = new HashMap<>();
         startMulticastReceiver();
-        sender = new UnicastSender(socket, config, acceptedMessages);
+        sender = new UnicastSender(this,socket, config, acceptedMessages);
         receiver = new UnicastReceiver(socket, acceptedMessages, this);
         receiver.start();
     }
@@ -91,7 +92,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
         if (inviteSender == null) inviteSender = new MulticastPublisher(this,
                 id,
                 config,
-                SnakesProto.GamePlayers.newBuilder().addAllPlayers(players).build());
+                players);
         inviteSender.start();
     }
 
@@ -155,11 +156,25 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
                 synchronized (playersActions) {
                     SnakesProto.Direction playerSnakeDirection = gameCore.getSnakeDirection(newPlayerId);
                     playersActions.put(newPlayerId, playerSnakeDirection);
-                    if(newPlayerId == 1) thisNodeAction = playerSnakeDirection;
+                    if (newPlayerId == 1) thisNodeAction = playerSnakeDirection;
                 }
             }
         }
         return newPlayerId;
+    }
+
+    private void deletePlayer(int playerId){
+        int index = 0;
+        for(SnakesProto.GamePlayer player : players){
+            if(player.getId() == playerId) break;
+            index++;
+        }
+        players.remove(index);
+    }
+
+    @Override
+    public void disconnectPlayer(int playerId){
+        deletePlayer(playerId);
     }
 
     private void changeNodeRole(SnakesProto.NodeRole role) {
@@ -168,8 +183,6 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
                 stopMulticastReceiver();
                 nodeRole = SnakesProto.NodeRole.MASTER;
                 playersActions.clear(); //todo make parse of last actions when deputy becomes master-node
-                addPlayer(name, "", port, nodeRole, playerType);
-
                 startMulticastPublisher();
                 actionUpdater = new ActionUpdater(this, config, gameCore, sender, id, playersActions, players);
                 actionUpdater.start();
@@ -183,7 +196,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
                 if (actionUpdater != null) actionUpdater.interrupt();
                 stopMulticastReceiver();
                 stopMulticastPublisher();
-                switch (nodeRole){
+                switch (nodeRole) {
                     case MASTER -> {
 
                     }
@@ -194,9 +207,12 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
     }
 
     @Override
-    public synchronized void nodeSnakeIsDead(int playerId){
-        playersActions.remove(playerId);
-        changeNodeRole(SnakesProto.NodeRole.VIEWER);
+    public synchronized void nodeSnakeIsDead(int playerId) {
+        System.out.println("Node snake is dead id = " + playerId);
+        synchronized (playersActions) {
+            playersActions.remove(playerId);
+        }
+        //changeNodeRole(SnakesProto.NodeRole.VIEWER);//todo send to player message about change role
     }
 
 
@@ -210,6 +226,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
         this.id = nodeId;
         launchGameCore();
         changeNodeRole(SnakesProto.NodeRole.MASTER);
+        addPlayer(name, "", port, nodeRole, playerType);
     }
 
     public void joinTheGame(String keyGame, SnakesProto.NodeRole newNodeRole) {
@@ -227,14 +244,27 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
         }
     }
 
-
     //Receive functions
+    private void assignMasterIp(List<SnakesProto.GamePlayer> playersListFromMessage, String ip) {
+        for (SnakesProto.GamePlayer player : playersListFromMessage) {
+            switch (player.getRole()) {
+                case MASTER -> {
+                    master = player.toBuilder().setIpAddress(ip).build();
+                }
+                case DEPUTY -> {
+                    deputy = player;
+                }
+            }
+        }
+    }
+
     @Override
-    public void receiveAnnouncementMsg(SnakesProto.GameMessage.AnnouncementMsg msg, SnakesProto.GamePlayer masterPLayer) {
+    public void receiveAnnouncementMsg(SnakesProto.GameMessage.AnnouncementMsg msg, String masterIp) {
+        assignMasterIp(msg.getPlayers().getPlayersList(), masterIp);
         synchronized (announcementMsgMap) {
-            String key = makeKeyForAnnouncementMsg(masterPLayer.getIpAddress(), masterPLayer.getPort());
+            String key = makeKeyForAnnouncementMsg(master.getIpAddress(), master.getPort());
             if (!announcementMsgMap.containsKey(key)) {
-                announcementMsgMap.put(key, new AnnouncementMsg(msg, masterPLayer));
+                announcementMsgMap.put(key, new AnnouncementMsg(msg, master));
             } else {
                 announcementMsgMap.get(key).updateTime();
             }
@@ -255,12 +285,17 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
     @Override
     public void receiveGameStateMsg(SnakesProto.GameState gameState, String masterIp) {
         if (gameState.getStateOrder() > stateOrder) {
+            assignMasterIp(gameState.getPlayers().getPlayersList(), masterIp);
             stateOrder = gameState.getStateOrder();
             players = gameState.getPlayers().getPlayersList();
             //todo set IP in players for master
             for (SnakesProto.GamePlayer player : players) {
                 switch (player.getRole()) {
-                    case MASTER -> master = player.toBuilder().setIpAddress(masterIp).build();
+                    case MASTER -> {
+                        master = player.toBuilder().setIpAddress(masterIp).build();
+                        assert getGamePLayerById(master.getId()) != null;
+                        getGamePLayerById(master.getId()).toBuilder().setIpAddress(masterIp).build();
+                    }
                     case DEPUTY -> deputy = player;
                 }
             }
@@ -281,10 +316,14 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
     }
 
     @Override
-    public synchronized void receiveAckMsg(int id) {
-        acceptedMessages.add(messageSequence);
+    public void receiveAckMsg(int playerId, long messageSequence) {
+        synchronized (acceptedMessages){
+            acceptedMessages.add(messageSequence);
+            if(acceptedMessages.contains(messageSequence)) System.out.println("acceptedMessages.contains("+messageSequence+")");
+            else System.out.println("acceptedMessages.doesNotContain("+messageSequence+")");
+        }
         if (this.id == -1) {
-            this.id = id;
+            this.id = playerId;
             launchGameCore();
         }
     }
@@ -294,14 +333,15 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
     public void acceptMessage(int playerId, long messageSequence) {
         SnakesProto.GamePlayer player = getGamePLayerById(playerId);
         assert player != null;
-        if(player.getRole() == SnakesProto.NodeRole.MASTER) player = master;
+        if (player.getRole() == SnakesProto.NodeRole.MASTER){
+            player = master;
+        }
         sender.sendMessage(player, MessageBuilder.ackMsgBuilder(messageSequence, id, playerId));
     }
 
-
     //Keyboard listener
     public void setKeyboardAction(SnakesProto.Direction direction) {
-        if ((stateOrder!=0 || nodeRole== SnakesProto.NodeRole.MASTER) && nodeRole!= SnakesProto.NodeRole.VIEWER && reverseDirection(gameCore.getSnakeDirection(id)) != direction) {
+        if ((stateOrder != 0 || nodeRole == SnakesProto.NodeRole.MASTER) && nodeRole != SnakesProto.NodeRole.VIEWER && reverseDirection(gameCore.getSnakeDirection(id)) != direction) {
             switch (nodeRole) {
                 case MASTER -> {
                     synchronized (playersActions) {
@@ -312,7 +352,6 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
             }
         }
     }
-
 
     //Get updating parameters
     @Override

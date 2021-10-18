@@ -221,7 +221,10 @@ public class Snake {
                 snakeCoordinates.add(0, newPoint);
             }
             case SNAKE -> {
-                listener.snakeIsDead(snake.getPlayerId());
+                for(Coord c : snakeCoordinates){
+                    listener.clearSnakePoint(c);
+                }
+                listener.snakeIsDead(snake.getPlayerId(),snakeCoordinates);
             }
         }
     }

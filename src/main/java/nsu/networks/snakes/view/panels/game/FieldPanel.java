@@ -2,6 +2,8 @@ package nsu.networks.snakes.view.panels.game;
 
 import nsu.networks.snakes.view.panels.WindowPanel;
 
+import java.util.Date;
+
 import static nsu.networks.snakes.view.ViewUtils.getPart;
 
 public class FieldPanel extends WindowPanel {
@@ -18,9 +20,9 @@ public class FieldPanel extends WindowPanel {
         this.fieldWidth = widthField;
         this.fieldHeight = heightField;
         this.setLayout(null);
-        int cellSize = (int)(widthPanel*0.6/fieldWidth);
-        if(cellSize*fieldHeight > (int)(widthPanel*0.9)){
-            cellSize = (int)(widthPanel*0.9/fieldHeight);
+        int cellSize = (int)(width*0.6/fieldWidth);
+        if(cellSize*fieldHeight > (int)(height*0.9)){
+            cellSize = (int)(height*0.9/fieldHeight);
         }
         this.fieldCellsPanel = new FieldCellsPanel(cellSize,fieldWidth,fieldHeight);
         this.add(fieldCellsPanel);

@@ -25,23 +25,23 @@ public class UnicastReceiver extends Thread {
         switch (msg.getTypeCase()) {
             case PING -> {
                 listener.acceptMessage(messageSenderId, messageSequence);
-                System.out.println("PING id:" + messageSenderId + "seq=" + messageSequence);
+                System.out.println("PING id:" + messageSenderId + " seq=" + messageSequence);
             }
             case STEER -> {
                 listener.acceptMessage(messageSenderId, messageSequence);
                 listener.receiveSteerMsg(msg.getSteer().getDirection(), messageSenderId);
-                System.out.println("STEER id:" + messageSenderId + "seq=" + messageSequence);
+                System.out.println("STEER id:" + messageSenderId + " seq=" + messageSequence);
             }
             case ACK -> {
                 synchronized (acceptedMessages) {
-                    listener.receiveAckMsg(msg.getReceiverId());
-                    System.out.println("ACK id:" + messageSenderId + "seq=" + messageSequence);
+                    listener.receiveAckMsg(msg.getReceiverId(),messageSequence);
+                    System.out.println("ACK id:" + messageSenderId + " seq=" + messageSequence);
                 }
             }
             case STATE -> {
                 listener.acceptMessage(messageSenderId, messageSequence);
                 listener.receiveGameStateMsg(msg.getState().getState(), address.getHostAddress());
-                System.out.println("STATE id:" + messageSenderId + "seq=" + messageSequence);
+                System.out.println("STATE id:" + messageSenderId + " seq=" + messageSequence);
             }
             case JOIN -> {
                 SnakesProto.GameMessage.JoinMsg joinMsg = msg.getJoin();
@@ -51,11 +51,11 @@ public class UnicastReceiver extends Thread {
                         joinMsg.getOnlyView() ? SnakesProto.NodeRole.VIEWER : SnakesProto.NodeRole.NORMAL,
                         joinMsg.getPlayerType());
                 listener.acceptMessage(newPlayerId, messageSequence);
-                System.out.println("JOIN id:" + messageSenderId + "seq=" + messageSequence);
+                System.out.println("JOIN id:" + messageSenderId + " seq=" + messageSequence);
             }
             case ERROR -> {
                 listener.acceptMessage(messageSenderId, messageSequence);
-                System.out.println("ERROR id:" + messageSenderId + "seq=" + messageSequence);
+                System.out.println("ERROR id:" + messageSenderId + " seq=" + messageSequence);
             }
             case ROLE_CHANGE -> {
                 listener.acceptMessage(messageSenderId, messageSequence);

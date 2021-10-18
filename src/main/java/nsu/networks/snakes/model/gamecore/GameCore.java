@@ -28,7 +28,7 @@ public class GameCore implements SnakeListener, FoodListener {
         clearField();
         this.snakeMap = new HashMap<>();
         this.nodePlayerId = nodePlayerId;
-        this.food = new Food(this, width, height, config.getFoodStatic(), config.getFoodPerPlayer());
+        this.food = new Food(this, width, height, config.getFoodStatic(), config.getFoodPerPlayer(), config.getDeadFoodProb());
         this.opportunityToJoin = true;
     }
 
@@ -55,12 +55,12 @@ public class GameCore implements SnakeListener, FoodListener {
 
     }
 
-    private Coord findTailCoordination(int xHead, int yHead){
+    private Coord findTailCoordination(int xHead, int yHead) {
         boolean success = false;
         SnakesProto.Direction direction;
         int xTail = 0;
         int yTail = 0;
-        while(!success) {
+        while (!success) {
             direction = getRandomDirection();
             switch (direction) {
                 case LEFT -> {
@@ -75,24 +75,24 @@ public class GameCore implements SnakeListener, FoodListener {
                 }
                 case UP -> {
                     xTail = xHead;
-                    yTail = addY(yHead,1);
+                    yTail = addY(yHead, 1);
                     if (field[yTail][xTail] == '-') success = true;
                 }
                 case DOWN -> {
                     xTail = xHead;
-                    yTail = subtractY(yHead,1);
+                    yTail = subtractY(yHead, 1);
                     if (field[yTail][xTail] == '-') success = true;
                 }
             }
         }
-        return buildCoordinate(xTail,yTail);
+        return buildCoordinate(xTail, yTail);
     }
 
     private void createNewSnake(int playerId) {
         int xHead = getField().indexOf('-') % width;
         int yHead = getField().indexOf('-') / height;
-        Coord head = buildCoordinate(xHead,yHead);
-        Coord tail = findTailCoordination(xHead,yHead);
+        Coord head = buildCoordinate(xHead, yHead);
+        Coord tail = findTailCoordination(xHead, yHead);
         int iter = 0;
         do {
             int randX = (int) (Math.random() * width);
@@ -107,7 +107,7 @@ public class GameCore implements SnakeListener, FoodListener {
             }
             iter++;
         } while (iter != 20);
-        Snake newSnake = new Snake(this, width, height, playerId,head,tail);
+        Snake newSnake = new Snake(this, width, height, playerId, head, tail);
         snakeMap.put(playerId, newSnake);
     }
 
@@ -199,11 +199,10 @@ public class GameCore implements SnakeListener, FoodListener {
         return Coord.newBuilder().setX(x).setY(y).build();
     }
 
-
     @Override
     public PointType checkCoordinate(int x, int y) {
         switch (field[y][x]) {
-            case '-','.' -> {
+            case '-', '.' -> {
                 return PointType.EMPTY;
             }
             case '#', '&' -> {
@@ -217,8 +216,8 @@ public class GameCore implements SnakeListener, FoodListener {
     }
 
     private void setSymInSquare(char sym, int xCenter, int yCenter, int sqSize) {
-        int startX = subtractX(xCenter, (sqSize-1)/2);
-        int startY = subtractY(yCenter, (sqSize-1)/2);
+        int startX = subtractX(xCenter, (sqSize - 1) / 2);
+        int startY = subtractY(yCenter, (sqSize - 1) / 2);
         for (int i = 0; i < sqSize; i++) {
             int newX = addX(startX, i);
             for (int j = 0; j < sqSize; j++) {
@@ -235,17 +234,25 @@ public class GameCore implements SnakeListener, FoodListener {
         int x = coordinate.getX();
         int y = coordinate.getY();
         field[y][x] = '*';
-        setSymInSquare('.', x, y,3);
+        setSymInSquare('.', x, y, 3);
     }
 
     @Override
     public void setSnakePoint(Coord coordinate, int playerId) {
         int x = coordinate.getX();
         int y = coordinate.getY();
-        if (field[y][x] == '*') food.foodWasEaten(x, y);
+        if (field[y][x] == '*') food.foodWasEaten(coordinate);
         if (nodePlayerId == playerId) field[y][x] = '&';
         else field[y][x] = '#';
-        setSymInSquare('.', x, y,5);
+        setSymInSquare('.', x, y, 5);
+    }
+
+    @Override
+    public void clearSnakePoint(Coord coordinate) {
+        int x = coordinate.getX();
+        int y = coordinate.getY();
+        field[y][x] = '-';
+        setSymInSquare('-', x, y, 5);
     }
 
     @Override
@@ -277,14 +284,16 @@ public class GameCore implements SnakeListener, FoodListener {
                 }
             }
         }
-        setSymInSquare('-', x, y,5);
-        setSymInSquare('.', prevX, prevY,5);
+        setSymInSquare('-', x, y, 5);
+        setSymInSquare('.', prevX, prevY, 5);
         field[y][x] = '.';
     }
 
     @Override
-    public void snakeIsDead(int snakePlayerId) {
+    public void snakeIsDead(int snakePlayerId, List<Coord> snakeCoordinates) {
+        food.turnSnakeIntoFood(snakeCoordinates);
         snakeMap.remove(snakePlayerId);
+        food.updateNumberOfFood(snakeMap.size());
         listener.nodeSnakeIsDead(snakePlayerId);
         System.out.println("Snake " + snakePlayerId + " is dead!");
         //TODO: send signal to food class for make dead points in food
@@ -298,6 +307,4 @@ public class GameCore implements SnakeListener, FoodListener {
     public String getFieldString() {
         return getField();
     }
-
-
 }

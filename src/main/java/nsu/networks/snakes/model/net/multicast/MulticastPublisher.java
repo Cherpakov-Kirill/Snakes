@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.List;
 
 public class MulticastPublisher extends Thread {
     private DatagramSocket socket = null;
@@ -16,25 +17,26 @@ public class MulticastPublisher extends Thread {
     private boolean opportunityToJoin;
     private long messageSequence;
     private final SnakesProto.GameConfig config;
-    private final SnakesProto.GamePlayers players;
+    private final List<SnakesProto.GamePlayer> playersList;
+    private SnakesProto.GamePlayers playersMessage;
 
-    public MulticastPublisher(MulticastPublisherListener listener, int nodeId, SnakesProto.GameConfig config, SnakesProto.GamePlayers players) {
+
+    public MulticastPublisher(MulticastPublisherListener listener, int nodeId, SnakesProto.GameConfig config, List<SnakesProto.GamePlayer> players) {
         this.listener = listener;
         this.nodeId = nodeId;
         this.config = config;
-        this.players = players;
+        this.playersList = players;
     }
 
     private void updateData() {
+        playersMessage = SnakesProto.GamePlayers.newBuilder().addAllPlayers(playersList).build();
         opportunityToJoin = listener.getOpportunityToJoin();
         messageSequence = listener.getMessageSequence();
     }
 
     private byte[] getMessage() {
         SnakesProto.GameMessage message;
-        synchronized (players){
-            message = MessageBuilder.announcementMsgBuilder(players,config,opportunityToJoin,messageSequence,nodeId);
-        }
+        message = MessageBuilder.announcementMsgBuilder(playersMessage,config,opportunityToJoin,messageSequence,nodeId);
         return message.toByteArray();
     }
 
