@@ -6,17 +6,14 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.Set;
 
 public class UnicastReceiver extends Thread {
-    private final Set<Long> acceptedMessages;
     private final DatagramSocket socket;
     private final UnicastReceiverListener listener;
 
-    public UnicastReceiver(DatagramSocket socket, Set<Long> acceptedMessages, UnicastReceiverListener listener) {
-        this.acceptedMessages = acceptedMessages;
-        this.socket = socket;
+    public UnicastReceiver(UnicastReceiverListener listener, DatagramSocket socket) {
         this.listener = listener;
+        this.socket = socket;
     }
 
     public void messageTypeHandler(SnakesProto.GameMessage msg, InetAddress address, int port) {
@@ -34,9 +31,7 @@ public class UnicastReceiver extends Thread {
             }
             case ACK -> {
                 System.out.println("ACK id:" + messageSenderId + " seq=" + messageSequence);
-                synchronized (acceptedMessages) {
-                    listener.receiveAckMsg(msg.getReceiverId(), messageSequence);
-                }
+                listener.receiveAckMsg(msg.getReceiverId(), messageSequence);
             }
             case STATE -> {
                 System.out.println("STATE id:" + messageSenderId + " seq=" + messageSequence);
@@ -77,7 +72,6 @@ public class UnicastReceiver extends Thread {
                 byte[] gotBytes = new byte[packet.getLength()];
                 System.arraycopy(buffer, 0, gotBytes, 0, packet.getLength());
                 SnakesProto.GameMessage msg = SnakesProto.GameMessage.parseFrom(gotBytes);
-                //System.out.println(" RECEIVER GOT OBJECT (" + System.identityHashCode(msg) + "): " + msg);
                 messageTypeHandler(msg, packet.getAddress(), packet.getPort());
             }
         } catch (IOException e) {

@@ -74,8 +74,8 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
         }
         this.announcementMsgMap = new HashMap<>();
         startMulticastReceiver();
-        sender = new UnicastSender(this, socket, config, acceptedMessages);
-        receiver = new UnicastReceiver(socket, acceptedMessages, this);
+        sender = new UnicastSender(this, socket, config.getPingDelayMs(), config.getNodeTimeoutMs());
+        receiver = new UnicastReceiver(this, socket);
         receiver.start();
     }
 
@@ -103,7 +103,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
     }
 
     private void startActionUpdater() {
-        actionUpdater = new ActionUpdater(this, config);
+        actionUpdater = new ActionUpdater(this, config.getStateDelayMs());
         actionUpdater.start();
     }
 
@@ -194,6 +194,13 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
         }
     }
 
+    @Override
+    public boolean checkAcceptedMessage(long seqNumber) {
+        synchronized (acceptedMessages) {
+            return acceptedMessages.contains(seqNumber);
+        }
+    }
+
     private void changeThisNodeRole(SnakesProto.NodeRole role) {
         switch (role) {
             case MASTER -> {
@@ -224,7 +231,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
                     case MASTER -> {
                         changePlayerRole(id, SnakesProto.NodeRole.VIEWER);
                         if (deputy == null) exit();
-                        else{
+                        else {
                             int index = 0;
                             for (SnakesProto.GamePlayer player : players) {
                                 if (player.getRole() == SnakesProto.NodeRole.DEPUTY) {
@@ -269,7 +276,7 @@ public class Node implements GameCoreListener, MulticastPublisherListener, Multi
     }
 
     @Override
-    public void changeThisNodeMasterRoleOnViewer(){
+    public void changeThisNodeMasterRoleOnViewer() {
         sender.sendMessage(master, MessageBuilder.roleChangingMsgBuilder(SnakesProto.NodeRole.VIEWER, SnakesProto.NodeRole.MASTER, getMessageSequence(), id, master.getId()));
     }
 

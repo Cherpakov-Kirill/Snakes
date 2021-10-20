@@ -10,15 +10,16 @@ import java.util.*;
 
 public class UnicastSender {
     private final UnicastSenderListener listener;
-    private final SnakesProto.GameConfig config;
-    private final Set<Long> acceptedMessages;
+    private final int pingDelay;
+    private final int nodeTimeout;
+
     private final DatagramSocket socket;
 
-    public UnicastSender(UnicastSenderListener listener, DatagramSocket socket, SnakesProto.GameConfig config, Set<Long> acceptedMessages) {
+    public UnicastSender(UnicastSenderListener listener, DatagramSocket socket, int pingDelay, int nodeTimeout) {
         this.listener = listener;
-        this.config = config;
-        this.acceptedMessages = acceptedMessages;
         this.socket = socket;
+        this.pingDelay = pingDelay;
+        this.nodeTimeout = nodeTimeout;
     }
 
     public void sendMessage(SnakesProto.GamePlayer player, SnakesProto.GameMessage message) {
@@ -28,7 +29,7 @@ public class UnicastSender {
         } else {
             Timer timer = new Timer(true);
             TimerTask timerTask = new SenderHandler(socket, player, message);
-            timer.scheduleAtFixedRate(timerTask, 0, config.getPingDelayMs());
+            timer.scheduleAtFixedRate(timerTask, 0, pingDelay);
             Date timeOfStart = new Date();
             while (true) {
                 try {
@@ -36,17 +37,14 @@ public class UnicastSender {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                synchronized (acceptedMessages) {
-                    if (acceptedMessages.contains(message.getMsgSeq())) {
-                        System.out.println("Sender found accepted message. Break.");
-                        break;
-                    } else System.out.println("Sender did not find accepted message. seq = " + message.getMsgSeq());
-                }
-                if (new Date().getTime() - timeOfStart.getTime() > config.getNodeTimeoutMs()) {
+                if (listener.checkAcceptedMessage(message.getMsgSeq())) {
+                    System.out.println("Sender found accepted message. Break.");
+                    break;
+                } else System.out.println("Sender did not find accepted message. seq = " + message.getMsgSeq());
+                if (new Date().getTime() - timeOfStart.getTime() > nodeTimeout) {
                     System.out.println("Node " + player.getIpAddress() + ":" + player.getPort() + " was disconnected");
                     listener.disconnectPlayer(player.getId());
-                    ///тут надо поменять мастера на депути и слать пакеты ему
-                    //core.deleteNode(receiver);
+                    //if()
                     break;
                 }
             }

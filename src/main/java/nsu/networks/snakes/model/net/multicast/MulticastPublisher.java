@@ -14,11 +14,8 @@ public class MulticastPublisher extends Thread {
 
     private final MulticastPublisherListener listener;
     private final int nodeId;
-    private boolean opportunityToJoin;
-    private long messageSequence;
     private final SnakesProto.GameConfig config;
     private final List<SnakesProto.GamePlayer> playersList;
-    private SnakesProto.GamePlayers playersMessage;
 
 
     public MulticastPublisher(MulticastPublisherListener listener, int nodeId, SnakesProto.GameConfig config, List<SnakesProto.GamePlayer> players) {
@@ -28,15 +25,10 @@ public class MulticastPublisher extends Thread {
         this.playersList = players;
     }
 
-    private void updateData() {
-        playersMessage = SnakesProto.GamePlayers.newBuilder().addAllPlayers(playersList).build();
-        opportunityToJoin = listener.getOpportunityToJoin();
-        messageSequence = listener.getMessageSequence();
-    }
-
-    private byte[] getMessage() {
+    private byte[] getMessageBytes() {
         SnakesProto.GameMessage message;
-        message = MessageBuilder.announcementMsgBuilder(playersMessage,config,opportunityToJoin,messageSequence,nodeId);
+        SnakesProto.GamePlayers playersMessage = SnakesProto.GamePlayers.newBuilder().addAllPlayers(playersList).build();
+        message = MessageBuilder.announcementMsgBuilder(playersMessage,config,listener.getOpportunityToJoin(),listener.getMessageSequence(),nodeId);
         return message.toByteArray();
     }
 
@@ -47,10 +39,8 @@ public class MulticastPublisher extends Thread {
             int port = 9192;
             this.socket = new DatagramSocket();
             while (!isInterrupted()) {
-                updateData();
-                byte[] messageBuffer = getMessage();
+                byte[] messageBuffer = getMessageBytes();
                 DatagramPacket packet = new DatagramPacket(messageBuffer, messageBuffer.length, group, port);
-                //System.out.println("Sender sent " + packet.getLength()+" bytes");
                 socket.send(packet);
                 Thread.sleep(1000);
             }
@@ -60,10 +50,10 @@ public class MulticastPublisher extends Thread {
         } catch (InterruptedException e) {
             System.out.println("Multicast publisher: " + e.getMessage());
         } finally {
-            System.out.println("Multicast publisher finished");
             if (socket != null) {
                 socket.close();
             }
+            System.out.println("Multicast publisher finished");
         }
     }
 }

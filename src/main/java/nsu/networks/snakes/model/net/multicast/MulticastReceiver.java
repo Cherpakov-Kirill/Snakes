@@ -4,7 +4,6 @@ import nsu.networks.snakes.model.SnakesProto;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.List;
 
 public class MulticastReceiver extends Thread {
     private MulticastSocket socket = null;
@@ -36,17 +35,16 @@ public class MulticastReceiver extends Thread {
                 byte[] gotBytes = new byte[packet.getLength()];
                 System.arraycopy(buf, 0, gotBytes, 0, packet.getLength());
                 SnakesProto.GameMessage msg = SnakesProto.GameMessage.parseFrom(gotBytes);
-                //System.out.println(" RECEIVER GOT OBJECT (" + System.identityHashCode(msg) + "): " + msg);
                 listener.receiveAnnouncementMsg(msg.getAnnouncement(), packet.getAddress().getHostAddress());
             }
             socket.leaveGroup(group, netIf);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            System.out.println("Multicast receiver finished");
             if (socket != null) {
                 socket.close();
             }
+            System.out.println("Multicast receiver finished");
         }
     }
 }

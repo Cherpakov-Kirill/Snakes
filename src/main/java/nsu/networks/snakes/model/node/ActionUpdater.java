@@ -8,13 +8,13 @@ import java.util.*;
 
 public class ActionUpdater extends Thread {
     private final ActionUpdaterListener listener;
-    private final SnakesProto.GameConfig config;
+    private final int stateDelay;
     private boolean isAlive;
 
     public ActionUpdater(ActionUpdaterListener listener,
-                         SnakesProto.GameConfig config) {
+                         int stateDelay) {
         this.listener = listener;
-        this.config = config;
+        this.stateDelay = stateDelay;
         this.isAlive = true;
     }
 
@@ -24,13 +24,12 @@ public class ActionUpdater extends Thread {
 
     @Override
     public void run() {
-        int sleepMs = config.getStateDelayMs();
         Timer timer = new Timer(true);
         TimerTask timerTask = new Updater(listener);
-        timer.scheduleAtFixedRate(timerTask, 0, sleepMs);
+        timer.scheduleAtFixedRate(timerTask, 0, stateDelay);
         try {
             while (isAlive) {
-                Thread.sleep(sleepMs);
+                Thread.sleep(stateDelay);
             }
         } catch (InterruptedException e) {
             System.out.println("Action Updater: " + e.getMessage());
