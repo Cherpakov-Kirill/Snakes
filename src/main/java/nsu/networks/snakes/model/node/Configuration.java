@@ -7,7 +7,7 @@ public class Configuration {
     public static int height = 10;
 
     public static SnakesProto.GameConfig defaultConfigBuilder(){
-        return configBuilder(width,height,1,1,100,(float)0.1,100,800);
+        return configBuilder(width,height,1,1,1000,(float)0.1,100,800);
         //todo 1000 ms delay
     }
 

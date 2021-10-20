@@ -42,7 +42,7 @@ public class MulticastPublisher extends Thread {
 
     public void run() {
         try {
-            System.out.println("Multicast Publisher started");
+            System.out.println("Multicast publisher started");
             InetAddress group = InetAddress.getByName("239.192.0.4");
             int port = 9192;
             this.socket = new DatagramSocket();
@@ -55,10 +55,12 @@ public class MulticastPublisher extends Thread {
                 Thread.sleep(1000);
             }
 
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
+        } catch (InterruptedException e) {
+            System.out.println("Multicast publisher: " + e.getMessage());
         } finally {
-            System.out.println("Multicast Publisher finished");
+            System.out.println("Multicast publisher finished");
             if (socket != null) {
                 socket.close();
             }

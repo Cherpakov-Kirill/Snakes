@@ -296,7 +296,6 @@ public class GameCore implements SnakeListener, FoodListener {
         food.updateNumberOfFood(snakeMap.size());
         listener.nodeSnakeIsDead(snakePlayerId);
         System.out.println("Snake " + snakePlayerId + " is dead!");
-        //TODO: send signal to food class for make dead points in food
     }
 
     public void updateField() {

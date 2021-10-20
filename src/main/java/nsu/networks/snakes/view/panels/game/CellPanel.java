@@ -24,5 +24,6 @@ public class CellPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         g.drawImage(imageIcon.getImage(), 0, 0, null);
+        Toolkit.getDefaultToolkit().sync();
     }
 }

@@ -3,11 +3,21 @@ package nsu.networks.snakes.model.net.messages;
 import nsu.networks.snakes.model.SnakesProto;
 
 import java.util.Date;
+import java.util.LinkedList;
 
 public class AnnouncementMsg {
     public SnakesProto.GameMessage.AnnouncementMsg gameMessage;
     public SnakesProto.GamePlayer master;
     private long timeOfLastReceivedMsg;
+
+    public static SnakesProto.GamePlayer getMasterPlayerFromGameMessage(SnakesProto.GameMessage.AnnouncementMsg gameMessage){
+        for (SnakesProto.GamePlayer player : gameMessage.getPlayers().getPlayersList()) {
+            if (player.getRole() == SnakesProto.NodeRole.MASTER) {
+                return player;
+            }
+        }
+        return null;
+    }
 
     public static String makeKeyForAnnouncementMsg(String address, int port) {
         return address + ":" + port;
