@@ -1,4 +1,4 @@
-package nsu.networks.snakes.model.net.multicast;
+package nsu.networks.snakes.model.inet.multicast;
 
 import nsu.networks.snakes.model.SnakesProto;
 

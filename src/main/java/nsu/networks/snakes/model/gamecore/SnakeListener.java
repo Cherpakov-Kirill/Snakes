@@ -5,6 +5,8 @@ import static nsu.networks.snakes.model.SnakesProto.GameState.*;
 
 public interface SnakeListener {
     PointType checkCoordinate(int x, int y);
+    void addOnePoint(int nodePlayerId);
+    void addOnePointToOtherSnake(int nodePlayerId,Coord point);
     void setSnakePoint(Coord coordinate, int playerId);
     void clearSnakePoint(Coord coordinate);
     void deleteSnakePoint(Coord coordinate);

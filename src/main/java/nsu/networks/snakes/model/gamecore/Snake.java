@@ -207,6 +207,10 @@ public class Snake {
         return snakeCoordinates.get(snakeCoordinates.size() - 1);
     }
 
+    public boolean containsCoordinate(Coord point){
+        return snakeCoordinates.contains(point);
+    }
+
     private void setMove(Coord newPoint) {
         PointType type = listener.checkCoordinate(newPoint.getX(), newPoint.getY());
         switch (type) {
@@ -219,8 +223,17 @@ public class Snake {
             case FOOD -> {
                 listener.setSnakePoint(newPoint, playerId);
                 snakeCoordinates.add(0, newPoint);
+                listener.addOnePoint(playerId);
             }
             case SNAKE -> {
+                listener.deleteSnakePoint(getTailCoordinate());
+                deleteTail();
+                if(listener.checkCoordinate(newPoint.getX(), newPoint.getY()) == PointType.EMPTY){
+                    listener.setSnakePoint(newPoint, playerId);
+                    addHead(newPoint);
+                    break;
+                }
+                if(!containsCoordinate(newPoint)) listener.addOnePointToOtherSnake(playerId, newPoint);
                 for(Coord c : snakeCoordinates){
                     listener.clearSnakePoint(c);
                 }

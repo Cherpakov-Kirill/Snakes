@@ -1,9 +1,8 @@
-package nsu.networks.snakes.model.net.messages;
+package nsu.networks.snakes.model.messages;
 
 import nsu.networks.snakes.model.SnakesProto;
 
 import java.util.Date;
-import java.util.LinkedList;
 
 public class AnnouncementMsg {
     public SnakesProto.GameMessage.AnnouncementMsg gameMessage;

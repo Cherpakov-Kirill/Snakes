@@ -2,22 +2,23 @@ package nsu.networks.snakes.model.gamecore;
 
 import nsu.networks.snakes.model.SnakesProto;
 import nsu.networks.snakes.model.SnakesProto.GameState.Coord;
+import nsu.networks.snakes.model.actionUpdater.GameCoreForActionUpdater;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class GameCore implements SnakeListener, FoodListener {
+public class GameCore implements SnakeListener, FoodListener, GameCoreForActionUpdater {
     private final GameCoreListener listener;
     private final SnakesProto.GameConfig config;
     private final char[][] field;
+    private String fieldOnLastStep;
     private final int width;
     private final int height;
     private final int nodePlayerId;
     private final Map<Integer, Snake> snakeMap;
     private final Food food;
-    private boolean opportunityToJoin;
 
     public GameCore(GameCoreListener listener, SnakesProto.GameConfig config, int nodePlayerId) {
         this.listener = listener;
@@ -29,11 +30,10 @@ public class GameCore implements SnakeListener, FoodListener {
         this.snakeMap = new HashMap<>();
         this.nodePlayerId = nodePlayerId;
         this.food = new Food(this, width, height, config.getFoodStatic(), config.getFoodPerPlayer(), config.getDeadFoodProb());
-        this.opportunityToJoin = true;
     }
 
     public boolean getOpportunityToJoin() {
-        return getField().indexOf('-') != -1;
+        return getFieldString().indexOf('-') != -1;
     }
 
     //Functions for adding new player
@@ -41,10 +41,11 @@ public class GameCore implements SnakeListener, FoodListener {
         return snakeMap.get(playerId).getSnakeProto().getHeadDirection();
     }
 
-    public void addNewPlayer(int playerId) {
-        createNewSnake(playerId);
+    public boolean addNewPlayer(int playerId) {
+        if (!createNewSnake(playerId)) return false;
         food.updateNumberOfFood(snakeMap.size());
         food.addAllNotAddedFood();
+        return true;
     }
 
 
@@ -88,9 +89,13 @@ public class GameCore implements SnakeListener, FoodListener {
         return buildCoordinate(xTail, yTail);
     }
 
-    private void createNewSnake(int playerId) {
-        int xHead = getField().indexOf('-') % width;
-        int yHead = getField().indexOf('-') / height;
+    private boolean createNewSnake(int playerId) {
+        int indexOfEmpty = getFieldString().indexOf('-');
+        if (indexOfEmpty == -1) {
+            return false;
+        }
+        int xHead = indexOfEmpty % width;
+        int yHead = indexOfEmpty / height;
         Coord head = buildCoordinate(xHead, yHead);
         Coord tail = findTailCoordination(xHead, yHead);
         int iter = 0;
@@ -109,6 +114,7 @@ public class GameCore implements SnakeListener, FoodListener {
         } while (iter != 20);
         Snake newSnake = new Snake(this, width, height, playerId, head, tail);
         snakeMap.put(playerId, newSnake);
+        return true;
     }
 
 
@@ -156,17 +162,6 @@ public class GameCore implements SnakeListener, FoodListener {
                 field[i][j] = '-';
             }
         }
-    }
-
-    public String getField() {
-        StringBuilder string = new StringBuilder();
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                char sym = field[i][j];
-                string.append(sym);
-            }
-        }
-        return string.toString();
     }
 
     //Discrete THOR arithmetic functions
@@ -238,6 +233,22 @@ public class GameCore implements SnakeListener, FoodListener {
     }
 
     @Override
+    public void addOnePoint(int nodePlayerId) {
+        listener.addOnePoint(nodePlayerId);
+    }
+
+    @Override
+    public void addOnePointToOtherSnake(int nodePlayerId, Coord point) {
+        listener.addOnePoint(nodePlayerId);
+        for (int id : new LinkedList<>(snakeMap.keySet())) {
+            if(snakeMap.get(id).containsCoordinate(point)){
+                listener.addOnePoint(id);
+                break;
+            }
+        }
+    }
+
+    @Override
     public void setSnakePoint(Coord coordinate, int playerId) {
         int x = coordinate.getX();
         int y = coordinate.getY();
@@ -298,12 +309,25 @@ public class GameCore implements SnakeListener, FoodListener {
         System.out.println("Snake " + snakePlayerId + " is dead!");
     }
 
+
     public void updateField() {
-        listener.updateField(getField());
+        listener.updateField(getFieldString());
     }
 
     @Override
     public String getFieldString() {
-        return getField();
+        StringBuilder string = new StringBuilder();
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                char sym = field[i][j];
+                string.append(sym);
+            }
+        }
+        return string.toString();
+    }
+
+    @Override
+    public void saveFieldOnLastStep(){
+        fieldOnLastStep = getFieldString();
     }
 }

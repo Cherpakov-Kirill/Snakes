@@ -3,7 +3,7 @@ package nsu.networks.snakes.view.windows;
 import nsu.networks.snakes.controller.KeyboardController;
 import nsu.networks.snakes.model.Presenter;
 import nsu.networks.snakes.model.SnakesProto;
-import nsu.networks.snakes.model.node.Configuration;
+import nsu.networks.snakes.model.Configuration;
 import nsu.networks.snakes.view.View;
 import nsu.networks.snakes.view.panels.creating.CreatingGameListener;
 import nsu.networks.snakes.view.panels.creating.CreatingGamePanel;

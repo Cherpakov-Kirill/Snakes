@@ -1,8 +1,5 @@
 package nsu.networks.snakes.model;
 
-import nsu.networks.snakes.model.node.Configuration;
-import nsu.networks.snakes.model.node.Node;
-import nsu.networks.snakes.model.node.NodeListener;
 import nsu.networks.snakes.view.View;
 
 import java.util.List;
@@ -35,7 +32,7 @@ public class Presenter implements NodeListener {
     //Create new game
     private void createNewGame(SnakesProto.GameConfig config, String name, int port, SnakesProto.PlayerType type) {
         node = new Node(this, name, port, type);
-        node.createNewGame(config,1);
+        node.createNewGame(config);
     }
 
     public void startTheGame(String name, int port, SnakesProto.PlayerType type) {

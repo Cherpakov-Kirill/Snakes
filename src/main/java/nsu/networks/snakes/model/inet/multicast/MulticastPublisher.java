@@ -1,6 +1,6 @@
-package nsu.networks.snakes.model.net.multicast;
+package nsu.networks.snakes.model.inet.multicast;
 
-import nsu.networks.snakes.model.net.messages.MessageBuilder;
+import nsu.networks.snakes.model.messages.MessageBuilder;
 import nsu.networks.snakes.model.SnakesProto;
 
 import java.io.IOException;
@@ -28,7 +28,8 @@ public class MulticastPublisher extends Thread {
     private byte[] getMessageBytes() {
         SnakesProto.GameMessage message;
         SnakesProto.GamePlayers playersMessage = SnakesProto.GamePlayers.newBuilder().addAllPlayers(playersList).build();
-        message = MessageBuilder.announcementMsgBuilder(playersMessage,config,listener.getOpportunityToJoin(),listener.getMessageSequence(),nodeId);
+        message = MessageBuilder.announcementMsgBuilder(playersMessage,config,listener.getOpportunityToJoin(),nodeId);
+        MessageBuilder.setMessageSequence(message, listener.getMessageSequence());
         return message.toByteArray();
     }
 

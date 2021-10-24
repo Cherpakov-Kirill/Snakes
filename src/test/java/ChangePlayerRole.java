@@ -1,8 +1,7 @@
 import nsu.networks.snakes.model.SnakesProto;
-import nsu.networks.snakes.model.node.Configuration;
-import nsu.networks.snakes.model.node.Node;
-import nsu.networks.snakes.model.node.NodeListener;
-import org.junit.jupiter.api.BeforeAll;
+import nsu.networks.snakes.model.Configuration;
+import nsu.networks.snakes.model.Node;
+import nsu.networks.snakes.model.NodeListener;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -14,7 +13,7 @@ public class ChangePlayerRole implements NodeListener {
 
     private void init() {
         this.node = new Node(this,"Kirill",1025, SnakesProto.PlayerType.HUMAN);
-        node.createNewGame(Configuration.defaultConfigBuilder(),1);
+        node.createNewGame(Configuration.defaultConfigBuilder());
         this.newPLayer1 = node.receiveJoinMsg("Artem","127.0.0.1",1027, SnakesProto.NodeRole.NORMAL, SnakesProto.PlayerType.HUMAN);
         this.newPLayer2 = node.receiveJoinMsg("Dima","127.0.0.1",1028, SnakesProto.NodeRole.NORMAL, SnakesProto.PlayerType.HUMAN);
     }
@@ -22,7 +21,7 @@ public class ChangePlayerRole implements NodeListener {
     @Test
     public void test(){
         init();
-        node.changePlayerRole(newPLayer1, SnakesProto.NodeRole.VIEWER);
+        //node.changePlayerRole(newPLayer1, SnakesProto.NodeRole.VIEWER);
         System.out.println("Success!");
     }
 

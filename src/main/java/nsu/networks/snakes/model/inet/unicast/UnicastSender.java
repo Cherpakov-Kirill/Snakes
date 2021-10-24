@@ -1,6 +1,7 @@
-package nsu.networks.snakes.model.net.unicast;
+package nsu.networks.snakes.model.inet.unicast;
 
 import nsu.networks.snakes.model.SnakesProto;
+import nsu.networks.snakes.model.messages.MessageAcceptor;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -10,14 +11,17 @@ import java.util.*;
 
 public class UnicastSender {
     private final UnicastSenderListener listener;
+    private final DatagramSocket socket;
+    private final AcceptorForSender messageAcceptor;
+
     private final int pingDelay;
     private final int nodeTimeout;
 
-    private final DatagramSocket socket;
 
-    public UnicastSender(UnicastSenderListener listener, DatagramSocket socket, int pingDelay, int nodeTimeout) {
+    public UnicastSender(UnicastSenderListener listener, DatagramSocket socket, AcceptorForSender messageAcceptor, int pingDelay, int nodeTimeout) {
         this.listener = listener;
         this.socket = socket;
+        this.messageAcceptor = messageAcceptor;
         this.pingDelay = pingDelay;
         this.nodeTimeout = nodeTimeout;
     }
@@ -37,14 +41,14 @@ public class UnicastSender {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                if (listener.checkAcceptedMessage(message.getMsgSeq())) {
+                if (messageAcceptor.checkAcceptedMessage(message.getMsgSeq())) {
                     System.out.println("Sender found accepted message. Break.");
                     break;
                 } else System.out.println("Sender did not find accepted message. seq = " + message.getMsgSeq());
                 if (new Date().getTime() - timeOfStart.getTime() > nodeTimeout) {
                     System.out.println("Node " + player.getIpAddress() + ":" + player.getPort() + " was disconnected");
                     listener.disconnectPlayer(player.getId());
-                    //if()
+                    //todo change master on deputy
                     break;
                 }
             }

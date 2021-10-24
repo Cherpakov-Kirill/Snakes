@@ -1,4 +1,4 @@
-package nsu.networks.snakes.model.net.unicast;
+package nsu.networks.snakes.model.inet.unicast;
 
 import nsu.networks.snakes.model.SnakesProto;
 
@@ -8,12 +8,15 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 public class UnicastReceiver extends Thread {
-    private final DatagramSocket socket;
     private final UnicastReceiverListener listener;
+    private final DatagramSocket socket;
+    private final AcceptorForReceiver messageAcceptor;
 
-    public UnicastReceiver(UnicastReceiverListener listener, DatagramSocket socket) {
+
+    public UnicastReceiver(UnicastReceiverListener listener, DatagramSocket socket, AcceptorForReceiver messageAcceptor) {
         this.listener = listener;
         this.socket = socket;
+        this.messageAcceptor = messageAcceptor;
     }
 
     public void messageTypeHandler(SnakesProto.GameMessage msg, InetAddress address, int port) {
@@ -22,20 +25,20 @@ public class UnicastReceiver extends Thread {
         switch (msg.getTypeCase()) {
             case PING -> {
                 System.out.println("PING id:" + messageSenderId + " seq=" + messageSequence);
-                listener.acceptMessage(messageSenderId, messageSequence);
+                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
             }
             case STEER -> {
                 System.out.println("STEER id:" + messageSenderId + " seq=" + messageSequence);
-                listener.acceptMessage(messageSenderId, messageSequence);
+                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
                 listener.receiveSteerMsg(msg.getSteer().getDirection(), messageSenderId);
             }
             case ACK -> {
                 System.out.println("ACK id:" + messageSenderId + " seq=" + messageSequence);
-                listener.receiveAckMsg(msg.getReceiverId(), messageSequence);
+                messageAcceptor.receiveAckMsg(msg.getReceiverId(), messageSequence);
             }
             case STATE -> {
                 System.out.println("STATE id:" + messageSenderId + " seq=" + messageSequence);
-                listener.acceptMessage(messageSenderId, messageSequence);
+                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
                 listener.receiveGameStateMsg(msg.getState().getState(), address.getHostAddress());
             }
             case JOIN -> {
@@ -46,16 +49,16 @@ public class UnicastReceiver extends Thread {
                         port,
                         joinMsg.getOnlyView() ? SnakesProto.NodeRole.VIEWER : SnakesProto.NodeRole.NORMAL,
                         joinMsg.getPlayerType());
-                listener.acceptMessage(newPlayerId, messageSequence);
+                messageAcceptor.acceptMessage(newPlayerId, messageSequence);
 
             }
             case ERROR -> {
                 System.out.println("ERROR id:" + messageSenderId + " seq=" + messageSequence);
-                listener.acceptMessage(messageSenderId, messageSequence);
+                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
             }
             case ROLE_CHANGE -> {
                 System.out.println("ROLE_CHANGE " + msg.getRoleChange().getReceiverRole() + " id:" + messageSenderId + " seq=" + messageSequence);
-                listener.acceptMessage(messageSenderId, messageSequence);
+                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
                 listener.receiveRoleChangeMsg(msg.getRoleChange());
             }
         }
