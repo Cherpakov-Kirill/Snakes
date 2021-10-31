@@ -67,7 +67,7 @@ public class Food {
     public void updateNumberOfFood(int numberOfAliveSnakes) {
         this.numberOfAliveSnakes = numberOfAliveSnakes;
         int newNumberOfFood = foodStatic + (int) (foodPerPlayer * numberOfAliveSnakes);
-        notAddedFood += newNumberOfFood - this.numberOfFood;
+        if(newNumberOfFood > numberOfFood) notAddedFood += newNumberOfFood - this.numberOfFood;
         this.numberOfFood = newNumberOfFood;
     }
     public void updateFood(List<Coord> food) {

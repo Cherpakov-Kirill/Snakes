@@ -29,17 +29,18 @@ public class UnicastReceiver extends Thread {
             }
             case STEER -> {
                 System.out.println("STEER id:" + messageSenderId + " seq=" + messageSequence);
-                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
-                listener.receiveSteerMsg(msg.getSteer().getDirection(), messageSenderId);
+                boolean isMessageFromKnownPlayer = messageAcceptor.acceptMessage(messageSenderId, messageSequence);
+                if (isMessageFromKnownPlayer) listener.receiveSteerMsg(msg.getSteer().getDirection(), messageSenderId);
             }
             case ACK -> {
                 System.out.println("ACK id:" + messageSenderId + " seq=" + messageSequence);
-                messageAcceptor.receiveAckMsg(msg.getReceiverId(), messageSequence);
+                messageAcceptor.receiveAckMsg(msg.getReceiverId(), messageSenderId, messageSequence);
             }
             case STATE -> {
                 System.out.println("STATE id:" + messageSenderId + " seq=" + messageSequence);
-                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
-                listener.receiveGameStateMsg(msg.getState().getState(), address.getHostAddress());
+                boolean isMessageFromKnownPlayer = messageAcceptor.acceptMessage(messageSenderId, messageSequence);
+                if (isMessageFromKnownPlayer)
+                    listener.receiveGameStateMsg(msg.getState().getState(), address.getHostAddress());
             }
             case JOIN -> {
                 System.out.println("JOIN id:" + messageSenderId + " seq=" + messageSequence);
@@ -57,9 +58,9 @@ public class UnicastReceiver extends Thread {
                 messageAcceptor.acceptMessage(messageSenderId, messageSequence);
             }
             case ROLE_CHANGE -> {
-                System.out.println("ROLE_CHANGE " + msg.getRoleChange().getReceiverRole() + " id:" + messageSenderId + " seq=" + messageSequence);
-                messageAcceptor.acceptMessage(messageSenderId, messageSequence);
-                listener.receiveRoleChangeMsg(msg.getRoleChange());
+                System.out.println("ROLE_CHANGE from id:" + messageSenderId + "("+msg.getRoleChange().getSenderRole()+") to "+ msg.getRoleChange().getReceiverRole() + " seq=" + messageSequence);
+                boolean isMessageFromKnownPlayer = messageAcceptor.acceptMessage(messageSenderId, messageSequence);
+                if (isMessageFromKnownPlayer) listener.receiveRoleChangeMsg(msg.getRoleChange(), messageSenderId);
             }
         }
     }

@@ -13,7 +13,8 @@ import nsu.networks.snakes.view.panels.finding.FindingGameListener;
 import nsu.networks.snakes.view.panels.finding.FindingGamePanel;
 import nsu.networks.snakes.view.panels.finding.JoiningGameListener;
 import nsu.networks.snakes.view.panels.finding.JoiningGamePanel;
-import nsu.networks.snakes.view.panels.game.FieldPanel;
+import nsu.networks.snakes.view.panels.game.GamePanel;
+import nsu.networks.snakes.view.panels.game.GamePanelListener;
 import nsu.networks.snakes.view.panels.startMenu.StartListener;
 import nsu.networks.snakes.view.panels.startMenu.StartPanel;
 
@@ -23,7 +24,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 
-public class MainWindow extends JFrame implements View, StartListener, CreatingGameListener, FindingGameListener, JoiningGameListener, ConfigurationSettingsListener {
+public class MainWindow extends JFrame implements View, StartListener, CreatingGameListener, FindingGameListener, JoiningGameListener, GamePanelListener, ConfigurationSettingsListener {
     private static final String NAME = "Snakes";
     private static final String MENU = "Menu";
     private final int widthWindow;
@@ -39,7 +40,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
     private FindingGamePanel findingGamePanel;
     private JoiningGamePanel joiningGamePanel;
     private ConfigurationSettingsPanel configurationSettingsPanel;
-    private FieldPanel fieldPanel;
+    private GamePanel gamePanel;
 
     public MainWindow() {
         super(NAME);
@@ -86,8 +87,8 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
         this.addKeyListener(new KeyboardController(presenter));
         this.widthField = widthField;
         this.heightField = heightField;
-        fieldPanel = new FieldPanel(widthWindow, heightWindow, widthField, heightField);
-        setContentOnFrame(fieldPanel);
+        gamePanel = new GamePanel(this, widthWindow, heightWindow, widthField, heightField);
+        setContentOnFrame(gamePanel);
     }
 
     @Override
@@ -129,8 +130,8 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
     }
 
     @Override
-    public void updateField(String fieldString) {
-        fieldPanel.updateField(fieldString);
+    public void updateGameView(String fieldString, List<String> scoresTable, String nodeRole) {
+        gamePanel.updateGamePanel(fieldString, scoresTable, nodeRole);
     }
 
     @Override
@@ -163,7 +164,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
             } else {
                 widthField = 40;
                 heightField = 30;
-                fieldPanel = new FieldPanel(widthWindow, heightWindow, widthField, heightField);
+                gamePanel = new GamePanel(this, widthWindow, heightWindow, widthField, heightField);
                 presenter.startTheGame(creatingGamePanel.name,
                         creatingGamePanel.port,
                         creatingGamePanel.playerType);
@@ -177,5 +178,16 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
             configurationSettingsPanel = new ConfigurationSettingsPanel(this, widthWindow, heightWindow);
         }
         setContentOnFrame(configurationSettingsPanel);
+    }
+
+    @Override
+    public void changeRoleOnViewer() {
+        presenter.changeRoleOnViewer();
+    }
+
+    @Override
+    public void leaveTheGame() {
+        presenter.leaveTheGame();
+        backToStartMenu();
     }
 }

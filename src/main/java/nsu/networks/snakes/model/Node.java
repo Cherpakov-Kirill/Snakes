@@ -32,7 +32,7 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
 
     public Node(NodeListener listener, String name, int port, SnakesProto.PlayerType type) {
         this.listener = listener;
-        this.id = 0; //not received id of this node or not started game on Master
+        this.id = 0;
         this.config = Configuration.defaultConfigBuilder();
         this.name = name;
         this.port = port;
@@ -44,7 +44,7 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
         this.stateOrder = 0;
 
 
-        this.inetController = new InetController(this, port,config.getPingDelayMs(),config.getNodeTimeoutMs());
+        this.inetController = new InetController(this, port, config.getPingDelayMs(), config.getNodeTimeoutMs());
         this.players = new Players(this, inetController);
         inetController.attachPlayers(players);
     }
@@ -57,7 +57,7 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
     }
 
     private void stopActionUpdater() {
-        if (actionUpdater != null) actionUpdater.setChangeMasterBreakPoint();///actionUpdater.interrupt();
+        if (actionUpdater != null) actionUpdater.setChangeMasterBreakPoint();
         actionUpdater = null;
     }
 
@@ -67,18 +67,22 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
     }
 
     //Roles
-    private void changeThisNodeRole(SnakesProto.NodeRole role) {
-        if(nodeRole == role) return;
+    @Override
+    public void changeThisNodeRole(SnakesProto.NodeRole role, boolean requestFromPlayer) {
+        if (nodeRole == role) return;
         switch (role) {
             case MASTER -> {
                 inetController.stopMulticastReceiver();
-                inetController.startMulticastPublisher(id,config,players.getPlayersList());
+                inetController.startMulticastPublisher(id, config, players.getPlayersList());
                 startActionUpdater();
                 if (nodeRole != SnakesProto.NodeRole.MASTER) {
-                    for (SnakesProto.GamePlayer player : players.getPlayersList()) {
-                        if (player.getRole() == SnakesProto.NodeRole.VIEWER) continue;
-                        int newPlayerId = player.getId();
-                        actionUpdater.addNewPlayer(newPlayerId);
+                    if (players.getNumberOfPlayers() > 0) {
+                        for (SnakesProto.GamePlayer player : players.getPlayersList()) {
+                            if (player.getRole() == SnakesProto.NodeRole.VIEWER) continue;
+                            int newPlayerId = player.getId();
+                            actionUpdater.addNewPlayer(newPlayerId);
+                        }
+                        players.changePlayerRole(id, SnakesProto.NodeRole.MASTER, false);
                     }
                 }
             }
@@ -93,8 +97,8 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
                 inetController.stopMulticastPublisher();
                 switch (nodeRole) {
                     case MASTER -> {
-                        players.changePlayerRole(id, SnakesProto.NodeRole.VIEWER);
-                        if (players.deputy == null) exit();
+                        players.changePlayerRole(id, SnakesProto.NodeRole.VIEWER, false);
+                        if (players.deputy == null) endTheGame();
                         else {
                             int index = 0;
                             for (SnakesProto.GamePlayer player : players.getPlayersList()) {
@@ -108,13 +112,20 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
                             }
                         }
                     }
-                    case NORMAL, DEPUTY -> {
+                    case DEPUTY, NORMAL -> {
+                        if (requestFromPlayer)
+                            players.sendChangeRoleMessage(players.master, SnakesProto.NodeRole.VIEWER, SnakesProto.NodeRole.MASTER);
                     }
                 }
             }
         }
         System.out.println("Changed node role = " + role);
         this.nodeRole = role;
+        players.setNodeRole(nodeRole);
+    }
+
+    public void becameAViewer() {
+        changeThisNodeRole(SnakesProto.NodeRole.VIEWER, true);
     }
 
     //Dead snake
@@ -124,10 +135,15 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
         actionUpdater.removePlayer(playerId);
         if (playerId == id) {
             actionUpdater.setChangeMasterBreakPoint();
-            changeThisNodeRole(SnakesProto.NodeRole.VIEWER);
+            changeThisNodeRole(SnakesProto.NodeRole.VIEWER, false);
         } else {
-            players.changePlayerRole(playerId, SnakesProto.NodeRole.VIEWER);
+            players.changePlayerRole(playerId, SnakesProto.NodeRole.VIEWER, true);
         }
+    }
+
+    private void nodeBecameViewer(int playerId) {
+        System.out.println("Node became a VIEWER: id = " + playerId);
+        players.changePlayerRole(playerId, SnakesProto.NodeRole.VIEWER, false);
     }
 
     //Launching game
@@ -141,7 +157,7 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
     public void createNewGame(SnakesProto.GameConfig config) {
         this.config = config;
         launchGameCore(1);
-        changeThisNodeRole(SnakesProto.NodeRole.MASTER);
+        changeThisNodeRole(SnakesProto.NodeRole.MASTER, false);
         players.addPlayer(name, "", port, nodeRole, playerType);
     }
 
@@ -149,11 +165,11 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
         inetController.stopMulticastReceiver();
         AnnouncementMsg msg = inetController.getAnnouncementMsg(makeKeyForAnnouncementMsg(keyGame));
         if (msg != null) {
-            changeThisNodeRole(newNodeRole);
+            changeThisNodeRole(newNodeRole, false);
             this.config = msg.gameMessage.getConfig();
             players.updatePlayersList(msg.gameMessage.getPlayers().getPlayersList(), msg.master.getIpAddress());
             listener.openFieldWindow(config.getWidth(), config.getHeight());
-            players.sendJoinMessage(playerType,newNodeRole == SnakesProto.NodeRole.VIEWER, name);
+            players.sendJoinMessage(playerType, newNodeRole == SnakesProto.NodeRole.VIEWER, name);
         }
     }
 
@@ -168,11 +184,13 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
     }
 
     @Override
-    public void receiveRoleChangeMsg(SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg) {
-        if (roleChangeMsg.getReceiverRole() != nodeRole && nodeRole != SnakesProto.NodeRole.MASTER) {
-            changeThisNodeRole(roleChangeMsg.getReceiverRole());
-        } else System.out.println("I could not get Role Change correction!");
-
+    public void receiveRoleChangeMsg(SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg, int senderId) {
+        if (roleChangeMsg.getReceiverRole() != nodeRole) {
+            if (nodeRole != SnakesProto.NodeRole.MASTER) changeThisNodeRole(roleChangeMsg.getReceiverRole(), false);
+        } else {
+            if (nodeRole == SnakesProto.NodeRole.MASTER) nodeBecameViewer(senderId);
+            else players.changePlayerRole(senderId, roleChangeMsg.getSenderRole(), false);
+        }
     }
 
     @Override
@@ -187,14 +205,14 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
 
     //Players
     @Override
-    public boolean addPlayerInGame(int newPLayer) {
-        if(!gameCore.addNewPlayer(newPLayer)) return false;
-        actionUpdater.addNewPlayer(newPLayer);
+    public boolean addPlayerInGame(int newPlayer) {
+        if (!gameCore.addNewPlayer(newPlayer)) return false;
+        actionUpdater.addNewPlayer(newPlayer);
         return true;
     }
 
     @Override
-    public void addOnePoint(int nodePlayerId){
+    public void addOnePoint(int nodePlayerId) {
         players.addOnePoint(nodePlayerId);
     }
 
@@ -241,7 +259,7 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
     //Update UI visualization of map
     @Override
     public void updateField(String field) {
-        listener.updateField(field);
+        listener.updateField(field, players.getScores(), nodeRole.toString());
     }
 
     @Override
@@ -250,11 +268,10 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
     }
 
     //Exit
-    private void exit() {
+    public void endTheGame() {
         stopActionUpdater();
         inetController.stopMulticastPublisher();
         inetController.stopMulticastReceiver();
-        System.out.println("EXIT");
-        //todo call function from presenter exit()
+        inetController.interruptUnicast();
     }
 }

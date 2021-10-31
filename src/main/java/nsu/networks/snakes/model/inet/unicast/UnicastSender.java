@@ -1,6 +1,8 @@
 package nsu.networks.snakes.model.inet.unicast;
 
 import nsu.networks.snakes.model.SnakesProto;
+import nsu.networks.snakes.model.inet.ping.Ping;
+import nsu.networks.snakes.model.inet.ping.PingListener;
 import nsu.networks.snakes.model.messages.MessageAcceptor;
 
 import java.io.IOException;
@@ -10,23 +12,22 @@ import java.net.InetAddress;
 import java.util.*;
 
 public class UnicastSender {
-    private final UnicastSenderListener listener;
     private final DatagramSocket socket;
     private final AcceptorForSender messageAcceptor;
+    private final PingForSender ping;
 
     private final int pingDelay;
-    private final int nodeTimeout;
 
 
-    public UnicastSender(UnicastSenderListener listener, DatagramSocket socket, AcceptorForSender messageAcceptor, int pingDelay, int nodeTimeout) {
-        this.listener = listener;
+    public UnicastSender(DatagramSocket socket, AcceptorForSender messageAcceptor, PingForSender ping, int pingDelay) {
         this.socket = socket;
         this.messageAcceptor = messageAcceptor;
+        this.ping = ping;
         this.pingDelay = pingDelay;
-        this.nodeTimeout = nodeTimeout;
     }
 
     public void sendMessage(SnakesProto.GamePlayer player, SnakesProto.GameMessage message) {
+        ping.setTimeOfSentMessage(player.getId());
         if (message.getTypeCase() == SnakesProto.GameMessage.TypeCase.ACK) {
             SenderHandler sender = new SenderHandler(socket, player, message);
             sender.run();
@@ -34,23 +35,26 @@ public class UnicastSender {
             Timer timer = new Timer(true);
             TimerTask timerTask = new SenderHandler(socket, player, message);
             timer.scheduleAtFixedRate(timerTask, 0, pingDelay);
-            Date timeOfStart = new Date();
+            int delay = pingDelay / 4 > 0 ? pingDelay / 4 : 1;
             while (true) {
                 try {
-                    Thread.sleep(40);
+                    Thread.sleep(delay);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                if (messageAcceptor.checkAcceptedMessage(message.getMsgSeq())) {
-                    System.out.println("Sender found accepted message. Break.");
-                    break;
-                } else System.out.println("Sender did not find accepted message. seq = " + message.getMsgSeq());
-                if (new Date().getTime() - timeOfStart.getTime() > nodeTimeout) {
-                    System.out.println("Node " + player.getIpAddress() + ":" + player.getPort() + " was disconnected");
-                    listener.disconnectPlayer(player.getId());
-                    //todo change master on deputy
-                    break;
+                try {
+                    if (messageAcceptor.checkAcceptedMessage(message.getMsgSeq())) {
+                        System.out.println("Sender found accepted message. Break.");
+                        break;
+                    } else System.out.println("Sender did not find accepted message. seq = " + message.getMsgSeq());
+                    if (!ping.isAlivePlayer(player.getId())) {
+                        System.out.println("Sender BREAK seq = " + message.getMsgSeq());
+                        break;
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
                 }
+
             }
             timer.cancel();
         }

@@ -11,12 +11,12 @@ public class GameLinePanel extends WindowPanel {
     private final String filename;
 
     public GameLinePanel(JoiningGamePanel joiningGamePanel, String filename, int width, int height, int posX, int posY, String data){
-        super("/" + filename,width,height);
+        super("/" + filename, width, height);
         this.filename = filename;
         this.joiningGamePanel = joiningGamePanel;
         Dimension size = this.getPreferredSize();
         this.setBounds(posX, posY, size.width, size.height);
-        JLabel name = ViewUtils.initLabel(data, 16, 400, 50, 70, 5);
+        JLabel name = ViewUtils.initLabel(data, ViewUtils.getPart(height,0.32), ViewUtils.getPart(width,0.7), ViewUtils.getPart(height,0.5), ViewUtils.getPart(width,0.1), ViewUtils.getPart(height,0.25));
         add(name);
         JButton button = ViewUtils.initButton(width, height, 0, 0, e -> {
             makeChosenBackground();
@@ -32,4 +32,5 @@ public class GameLinePanel extends WindowPanel {
     public void makeDefaultBackground() {
         this.setImageIcon("/" + filename);
     }
+
 }

@@ -45,6 +45,9 @@ public class Presenter implements NodeListener {
         createNewGame(config,name,port,type);
     }
 
+    public void changeRoleOnViewer(){
+        node.becameAViewer();
+    }
 
     //Keyboard action listener
     public void makeRightMove() {
@@ -77,12 +80,16 @@ public class Presenter implements NodeListener {
     }
 
     @Override
-    public void updateField(String field) {
-        view.updateField(field);
+    public void updateField(String field, List<String> scoresTable, String nodeRole) {
+        view.updateGameView(field, scoresTable, nodeRole);
     }
 
     @Override
     public void updateFindGameList(List<String> games) {
         view.updateFindGameList(games);
+    }
+
+    public void leaveTheGame() {
+        node.endTheGame();
     }
 }

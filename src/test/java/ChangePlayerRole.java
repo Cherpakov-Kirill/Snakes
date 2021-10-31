@@ -25,9 +25,8 @@ public class ChangePlayerRole implements NodeListener {
         System.out.println("Success!");
     }
 
-
     @Override
-    public void updateField(String field) {
+    public void updateField(String field, List<String> scoresTable, String nodeRole) {
 
     }
 

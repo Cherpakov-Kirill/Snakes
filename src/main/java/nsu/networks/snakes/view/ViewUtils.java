@@ -1,10 +1,14 @@
 package nsu.networks.snakes.view;
 
+import nsu.networks.snakes.view.windows.MainWindow;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.image.BufferedImage;
+import java.net.URL;
 
 public class ViewUtils {
     public static int getPart(int param, double part){
@@ -22,6 +26,23 @@ public class ViewUtils {
         Dimension startSize = button.getPreferredSize();
         button.setBounds(posX, posY, startSize.width, startSize.height);
         return button;
+    }
+
+    public static ImageIcon getImageButtonIcon(String fileDirectory, Color colorForButton, int width, int height) {
+        URL file = MainWindow.class.getResource(fileDirectory);
+        if (file == null) {
+            BufferedImage defaultBackground = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = defaultBackground.createGraphics();
+            graphics.setPaint(colorForButton);
+            graphics.fillRect(0, 0, defaultBackground.getWidth(), defaultBackground.getHeight());
+            return new ImageIcon(defaultBackground);
+        } else {
+            ImageIcon background = new ImageIcon(file);
+            Image img = background.getImage();
+            Image temp = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            background = new ImageIcon(temp);
+            return background;
+        }
     }
 
     public static JLabel initLabel(String text, int fontSize, int width, int height, int posX, int posY) {

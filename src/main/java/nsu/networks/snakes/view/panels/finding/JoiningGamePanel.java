@@ -57,7 +57,7 @@ public class JoiningGamePanel extends WindowPanel {
         gamesPanel.setLayout(null);
         int number = 0;
         for (String data : list) {
-            GameLinePanel gameLinePanel = new GameLinePanel(this, "User.png", gameLineWidth, gameLineHeight, 0, gameLineHeight * number, data);
+            GameLinePanel gameLinePanel = new GameLinePanel(this, "GameLine.png", gameLineWidth, gameLineHeight, 0, gameLineHeight * number, data);
             if (chosenGame == null || chosenGame.equals(data)) {
                 chosenGame = data;
                 gameLinePanel.makeChosenBackground();

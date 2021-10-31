@@ -1,6 +1,8 @@
 package nsu.networks.snakes.model.inet;
 
 import nsu.networks.snakes.model.SnakesProto;
+import nsu.networks.snakes.model.inet.ping.Ping;
+import nsu.networks.snakes.model.inet.ping.PingListener;
 import nsu.networks.snakes.model.messages.AnnouncementMsg;
 import nsu.networks.snakes.model.messages.MessageAcceptor;
 import nsu.networks.snakes.model.messages.MessageAcceptorListener;
@@ -11,7 +13,6 @@ import nsu.networks.snakes.model.inet.multicast.MulticastReceiver;
 import nsu.networks.snakes.model.inet.multicast.MulticastReceiverListener;
 import nsu.networks.snakes.model.inet.unicast.*;
 import nsu.networks.snakes.model.players.InetForPlayers;
-import nsu.networks.snakes.model.players.Players;
 
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -19,11 +20,12 @@ import java.util.*;
 
 import static nsu.networks.snakes.model.messages.AnnouncementMsg.makeKeyForAnnouncementMsg;
 
-public class InetController implements MulticastPublisherListener, MulticastReceiverListener, UnicastReceiverListener, UnicastSenderListener, MessageAcceptorListener, InetForPlayers {
+public class InetController implements MulticastPublisherListener, MulticastReceiverListener, UnicastReceiverListener, MessageAcceptorListener, PingListener, InetForPlayers {
     private final InetControllerListener listener;
     private PlayersForInet players;
     private DatagramSocket socket;
     private final MessageAcceptor messageAcceptor;
+    private final Ping ping;
     private final UnicastSender sender;
     private final UnicastReceiver receiver;
     private MulticastPublisher inviteSender;
@@ -41,12 +43,19 @@ public class InetController implements MulticastPublisherListener, MulticastRece
             e.printStackTrace();
         }
         this.messageAcceptor = new MessageAcceptor(this);
-        this.sender = new UnicastSender(this, socket, messageAcceptor, pingDelayMs, nodeTimeOutMs);
+        this.ping = new Ping(this,pingDelayMs,nodeTimeOutMs);
+        this.ping.start();
+        this.sender = new UnicastSender(socket, messageAcceptor, ping, pingDelayMs);
         this.receiver = new UnicastReceiver(this, socket, messageAcceptor);
         this.receiver.start();
         this.messageSequence = 0;
         this.announcementMsgMap = new HashMap<>();
         startMulticastReceiver();
+    }
+
+    public void interruptUnicast(){
+        ping.interrupt();
+        receiver.interrupt();
     }
 
     public void attachPlayers(PlayersForInet players){
@@ -88,6 +97,11 @@ public class InetController implements MulticastPublisherListener, MulticastRece
     @Override
     public void sendAckMessage(SnakesProto.GamePlayer player, SnakesProto.GameMessage message) {
         sender.sendMessage(player, message);
+    }
+
+    @Override
+    public void setTimeOfReceivedMessage(int playerId) {
+        ping.setTimeOfReceivedMessage(playerId);
     }
 
     @Override
@@ -140,13 +154,13 @@ public class InetController implements MulticastPublisherListener, MulticastRece
     }
 
     @Override
-    public void receiveRoleChangeMsg(SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg) {
-        listener.receiveRoleChangeMsg(roleChangeMsg);
+    public void receiveRoleChangeMsg(SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg, int senderId) {
+        listener.receiveRoleChangeMsg(roleChangeMsg, senderId);
     }
 
     @Override
-    public void receiveSteerMsg(SnakesProto.Direction direction, int playerId) {
-        listener.receiveSteerMsg(direction, playerId);
+    public void receiveSteerMsg(SnakesProto.Direction direction, int senderId) {
+        listener.receiveSteerMsg(direction, senderId);
     }
 
     @Override
@@ -157,6 +171,16 @@ public class InetController implements MulticastPublisherListener, MulticastRece
     @Override
     public void disconnectPlayer(int playerId) {
         players.disconnectPlayer(playerId);
+    }
+
+    @Override
+    public void sendPing(int playerId) {
+        players.sendPing(playerId);
+    }
+
+    @Override
+    public void removePlayerFromPing(int playerId){
+        ping.removePlayer(playerId);
     }
 
     @Override

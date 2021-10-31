@@ -5,11 +5,9 @@ import java.awt.*;
 
 public class CellPanel extends JPanel {
     private ImageIcon imageIcon;
-    private final int cellSize;
 
     public CellPanel(int cellSize, ImageIcon defaultIcon) {
         setLayout(null);
-        this.cellSize = cellSize;
         this.imageIcon = defaultIcon;
         setPreferredSize(new Dimension(cellSize, cellSize));
         repaint();

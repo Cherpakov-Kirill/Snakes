@@ -18,29 +18,34 @@ public class MessageAcceptor implements AcceptorForSender, AcceptorForReceiver {
         this.thisNodeId = 1;
     }
 
-    public void acceptMessage(int playerId, long messageSequence) {
+    @Override
+    public boolean acceptMessage(int playerId, long messageSequence) {
+        listener.setTimeOfReceivedMessage(playerId);
         SnakesProto.GamePlayer player = listener.getGamePlayerById(playerId);
-        //assert player != null;
-        /*if (player.getRole() == SnakesProto.NodeRole.MASTER) {
-            player = master;
-        }*/ //todo check that you have already set master ip
-        if (player != null)
+        if (player != null) {
             listener.sendAckMessage(player, MessageBuilder.ackMsgBuilder(messageSequence, thisNodeId, playerId));
+            //System.out.println("Message acceptor sent ACK to " + playerId);
+            return true;
+        }
+        return false;
     }
 
+    @Override
     public boolean checkAcceptedMessage(long seqNumber) {
         synchronized (acceptedMessages) {
             return acceptedMessages.contains(seqNumber);
         }
     }
 
-    public void receiveAckMsg(int playerId, long messageSequence) {
+    @Override
+    public void receiveAckMsg(int receiverId, int senderId, long messageSequence) {
+        listener.setTimeOfReceivedMessage(senderId);
         synchronized (acceptedMessages) {
             acceptedMessages.add(messageSequence);
         }
         if (messageSequence == 1) {
-            thisNodeId = playerId;
-            listener.launchGameCore(playerId);
+            thisNodeId = receiverId;
+            listener.launchGameCore(receiverId);
         }
     }
 }

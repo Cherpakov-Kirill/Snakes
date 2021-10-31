@@ -9,7 +9,7 @@ public interface View {
 
     void changeVisible(boolean var);
 
-    void updateField(String field);
+    void updateGameView(String field, List<String> scoresTable, String nodeRole);
 
     void updateFindGameList(List<String> games);
 

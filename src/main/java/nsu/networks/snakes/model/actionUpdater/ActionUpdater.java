@@ -2,6 +2,7 @@ package nsu.networks.snakes.model.actionUpdater;
 
 import nsu.networks.snakes.model.SnakesProto;
 
+import java.io.IOException;
 import java.util.*;
 
 public class ActionUpdater extends Thread {
@@ -29,13 +30,14 @@ public class ActionUpdater extends Thread {
     @Override
     public void run() {
         try {
+            Thread.sleep(stateDelay);
             while (isAlive) {
                 makeActions();
                 players.initiateDeputyPLayer();
                 players.sendGameStateToAllPlayers();
                 Thread.sleep(stateDelay);
             }
-        } catch (InterruptedException e) {
+        } catch (/*IOException | */InterruptedException e) {
             System.out.println("Action Updater: " + e.getMessage());
         } finally {
             System.out.println("Action Updater finished");
@@ -44,31 +46,30 @@ public class ActionUpdater extends Thread {
     }
 
     public void addAction(int playerId, SnakesProto.Direction direction) {
-        synchronized (playersActions) {
+        //synchronized (playersActions) {
             playersActions.put(playerId, direction);
-        }
+        //}
     }
 
     public void addNewPlayer(int newPlayerId) {
-        synchronized (playersActions) {
+        //synchronized (playersActions) {
             SnakesProto.Direction playerSnakeDirection = gameCore.getSnakeDirection(newPlayerId);
             playersActions.put(newPlayerId, playerSnakeDirection);
-        }
+        //}
     }
 
     public void removePlayer(int playerId) {
-        synchronized (playersActions) {
+        //synchronized (playersActions) {
             playersActions.remove(playerId);
-        }
+        //}
     }
 
     private void makeActions() {
-        gameCore.saveFieldOnLastStep();
-        synchronized (playersActions) {
+        //synchronized (playersActions) {
             for (int idPLayer : new LinkedList<>(playersActions.keySet())) {
                 gameCore.makeAction(idPLayer, playersActions.get(idPLayer));
             }
-        }
+        //}
         gameCore.updateField();
     }
 }
