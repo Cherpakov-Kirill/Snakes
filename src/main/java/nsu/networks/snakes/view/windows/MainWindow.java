@@ -187,7 +187,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
 
     @Override
     public void leaveTheGame() {
-        presenter.leaveTheGame();
         backToStartMenu();
+        presenter.leaveTheGame();
     }
 }

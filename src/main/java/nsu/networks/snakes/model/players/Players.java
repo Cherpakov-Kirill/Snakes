@@ -136,7 +136,7 @@ public class Players implements PlayersForActionUpdater, PlayersForInet {
                 case DEPUTY -> {
                     if(player.getRole() == SnakesProto.NodeRole.MASTER){
                         listener.changeThisNodeRole(SnakesProto.NodeRole.MASTER, false);
-                        newPlayerIdCounter = playerList.size();
+                        newPlayerIdCounter = playerList.size() + 1;
                         deletePlayer(playerId);
                         sendChangeRoleToAllPlayers(SnakesProto.NodeRole.MASTER);
                         findNewDeputy();
