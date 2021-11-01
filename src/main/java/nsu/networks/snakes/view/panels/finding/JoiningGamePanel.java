@@ -31,7 +31,7 @@ public class JoiningGamePanel extends WindowPanel {
         this.gameLineHeight = getPart(heightWindow, 0.1);
         add(ViewUtils.initButton(getPart(width, 0.0929), getPart(height, 0.1041), getPart(width, 0.01570), getPart(height, 0.0277), e -> listener.closeTheGame()));
         add(ViewUtils.initButton(getPart(width, 0.11), getPart(height, 0.082), getPart(width, 0.009), getPart(height, 0.16), e -> listener.backToStartMenu()));
-        add(ViewUtils.initButton(getPart(width, 0.11), getPart(height, 0.082), getPart(width, 0.8), getPart(height, 0.7), e -> joinTheGame()));
+        add(ViewUtils.initButton(getPart(width, 0.093), getPart(height, 0.15), getPart(width, 0.879), getPart(height, 0.8), e -> joinTheGame()));
         scrollPane = ViewUtils.initScrollPane((int)(gameLineWidth*1.025), gameLineHeight*7, getPart(width, 0.2), getPart(height, 0.25));
         add(scrollPane);
     }

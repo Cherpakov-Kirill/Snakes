@@ -4,6 +4,7 @@ import nsu.networks.snakes.controller.KeyboardController;
 import nsu.networks.snakes.model.Presenter;
 import nsu.networks.snakes.model.SnakesProto;
 import nsu.networks.snakes.model.Configuration;
+import nsu.networks.snakes.model.players.FieldPoint;
 import nsu.networks.snakes.view.View;
 import nsu.networks.snakes.view.panels.creating.CreatingGameListener;
 import nsu.networks.snakes.view.panels.creating.CreatingGamePanel;
@@ -22,7 +23,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URL;
 import java.util.List;
+import java.util.Properties;
 
 public class MainWindow extends JFrame implements View, StartListener, CreatingGameListener, FindingGameListener, JoiningGameListener, GamePanelListener, ConfigurationSettingsListener {
     private static final String NAME = "Snakes";
@@ -44,7 +51,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
 
     public MainWindow() {
         super(NAME);
-        this.widthWindow = 896;
+        this.widthWindow = 860;
         this.heightWindow = widthWindow / 16 * 9;
         this.setFocusable(true);
         this.setResizable(false);
@@ -69,21 +76,20 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
 
     @Override
     public void launchFindingGameModule() {
-        joiningGamePanel = new JoiningGamePanel(this,widthWindow,heightWindow);
+        joiningGamePanel = new JoiningGamePanel(this, widthWindow, heightWindow);
         setContentOnFrame(joiningGamePanel);
-        presenter.findTheGame(findingGamePanel.name,findingGamePanel.port, findingGamePanel.playerType);
+        presenter.findTheGame(findingGamePanel.name, findingGamePanel.port, findingGamePanel.playerType);
     }
 
     @Override
     public void joiningToGame(String gameKey) {
-        if(findingGamePanel.isViewer) {
+        if (findingGamePanel.isViewer) {
             presenter.joinTheGame(SnakesProto.NodeRole.VIEWER, gameKey);
-        }
-        else presenter.joinTheGame(SnakesProto.NodeRole.NORMAL, gameKey);
+        } else presenter.joinTheGame(SnakesProto.NodeRole.NORMAL, gameKey);
     }
 
     @Override
-    public void openField(int widthField, int heightField){
+    public void openField(int widthField, int heightField) {
         this.addKeyListener(new KeyboardController(presenter));
         this.widthField = widthField;
         this.heightField = heightField;
@@ -115,7 +121,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
 
     @Override
     public void findGames() {
-        findingGamePanel = new FindingGamePanel(this,widthWindow,heightWindow);
+        findingGamePanel = new FindingGamePanel(this, widthWindow, heightWindow);
         setContentOnFrame(findingGamePanel);
     }
 
@@ -130,7 +136,7 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
     }
 
     @Override
-    public void updateGameView(String fieldString, List<String> scoresTable, String nodeRole) {
+    public void updateGameView(List<FieldPoint> fieldString, List<String> scoresTable, String nodeRole) {
         gamePanel.updateGamePanel(fieldString, scoresTable, nodeRole);
     }
 
@@ -142,13 +148,13 @@ public class MainWindow extends JFrame implements View, StartListener, CreatingG
     @Override
     public void startTheGame() {
         if (configurationSettingsPanel == null) {
-            openField(Configuration.width,Configuration.height);
+            openField(Configuration.width, Configuration.height);
             presenter.startTheGame(creatingGamePanel.name,
                     creatingGamePanel.port,
                     creatingGamePanel.playerType);
         } else {
             if (configurationSettingsPanel.isSaved) {
-                openField(configurationSettingsPanel.widthGame,configurationSettingsPanel.heightGame);
+                openField(configurationSettingsPanel.widthGame, configurationSettingsPanel.heightGame);
                 presenter.startTheGame(creatingGamePanel.name,
                         creatingGamePanel.port,
                         creatingGamePanel.playerType,

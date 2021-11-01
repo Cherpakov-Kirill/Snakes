@@ -73,11 +73,11 @@ public class UnicastSender {
                         send();
                         Thread.sleep(pingDelay);
                         if (messageAcceptor.checkAcceptedMessage(message.getMsgSeq())) {
-                            System.out.println("Sender found accepted message. Break.");
+                            //System.out.println("Sender found accepted message. Break.");
                             break;
-                        } else System.out.println("Sender did not find accepted message. seq = " + message.getMsgSeq());
+                        }
                         if (!ping.isAlivePlayer(player.getId())) {
-                            System.out.println("Sender BREAK seq = " + message.getMsgSeq());
+                            System.out.println("Sender out seq = " + message.getMsgSeq() + " because id="+player.getId()+" is not available");
                             break;
                         }
                     } catch (InterruptedException | IOException e) {

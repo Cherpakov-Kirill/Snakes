@@ -3,6 +3,7 @@ package nsu.networks.snakes.model.gamecore;
 import nsu.networks.snakes.model.SnakesProto;
 import nsu.networks.snakes.model.SnakesProto.GameState.Coord;
 import nsu.networks.snakes.model.actionUpdater.GameCoreForActionUpdater;
+import nsu.networks.snakes.model.players.FieldPoint;
 
 import java.util.*;
 
@@ -15,6 +16,7 @@ public class GameCore implements SnakeListener, FoodListener, GameCoreForActionU
     private final Map<Integer, Snake> snakeMap;
     private final Map<Integer, Coord> idOfSnakeForDeleteCoords;
     private final Map<Coord, List<Integer>> idListOfNewCoords;
+    private String prevField;
     private final Food food;
 
     public GameCore(GameCoreListener listener, SnakesProto.GameConfig config, int nodePlayerId) {
@@ -28,6 +30,7 @@ public class GameCore implements SnakeListener, FoodListener, GameCoreForActionU
         this.food = new Food(this, width, height, config.getFoodStatic(), config.getFoodPerPlayer(), config.getDeadFoodProb());
         this.idOfSnakeForDeleteCoords = new HashMap<>();
         this.idListOfNewCoords = new HashMap<>();
+        prevField = "-".repeat(height * width);
     }
 
     public boolean getOpportunityToJoin() {
@@ -134,7 +137,23 @@ public class GameCore implements SnakeListener, FoodListener, GameCoreForActionU
             snakeMap.put(snake.getPlayerId(), new Snake(this, snake, width, height));
         }
         food.updateFood(gameState.getFoodsList());
-        listener.updateField(getFieldString());
+        listener.updateField(getFieldPoints());
+    }
+
+    private List<FieldPoint> getFieldPoints() {
+        List<FieldPoint> fieldPoints = new LinkedList<>();
+        int index = -1;
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                char sym = field[i][j];
+                index++;
+                if (sym == prevField.charAt(index)) continue;
+                Coord coordinate = buildCoordinate(j, i);
+                fieldPoints.add(new FieldPoint(sym, coordinate));
+            }
+        }
+        prevField = getFieldString();
+        return fieldPoints;
     }
 
     //Get game data for send
@@ -328,6 +347,11 @@ public class GameCore implements SnakeListener, FoodListener, GameCoreForActionU
     }
 
     @Override
+    public List<Integer> getListOfSnakesId() {
+        return new LinkedList<>(snakeMap.keySet());
+    }
+
+    @Override
     public void updateField() {
         for (int id : idOfSnakeForDeleteCoords.keySet()) {
             snakeMap.get(id).deleteTail();
@@ -358,9 +382,9 @@ public class GameCore implements SnakeListener, FoodListener, GameCoreForActionU
             if (id == nodePlayerId) isMasterSnakeDead = true;
             else snakeMap.get(id).deleteSnake();
         }
-        if(isMasterSnakeDead) snakeMap.get(nodePlayerId).deleteSnake();
+        if (isMasterSnakeDead) snakeMap.get(nodePlayerId).deleteSnake();
         idOfSnakeForDeleteCoords.clear();
         idListOfNewCoords.clear();
-        listener.updateField(getFieldString());
+        listener.updateField(getFieldPoints());
     }
 }

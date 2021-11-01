@@ -41,6 +41,7 @@ public class Players implements PlayersForActionUpdater, PlayersForInet {
     public int addPlayer(String name, String ip, int port, SnakesProto.NodeRole role, SnakesProto.PlayerType type) {
         int newPlayerId = getPlayerIdByIPAndPort(ip, port);
         if (newPlayerId == 0) {
+
             newPlayerId = newPlayerIdCounter;
             newPlayerIdCounter++;
             SnakesProto.GamePlayer newPlayer;
@@ -61,7 +62,6 @@ public class Players implements PlayersForActionUpdater, PlayersForInet {
                     disconnectPlayer(newPlayerId);
                     return -1;
                 }
-                ;
             }
         }
         return newPlayerId;
@@ -94,7 +94,7 @@ public class Players implements PlayersForActionUpdater, PlayersForInet {
                     if (player.getId() != nodeId) {
                         newMaster = player.toBuilder().setIpAddress(ip).build();
                         playerList.set(index, newMaster);
-                        System.out.println("Players: updated master ip = " + newMaster.getIpAddress());
+                        //System.out.println("Players: updated master ip = " + newMaster.getIpAddress());
                     } else newMaster = player;
                 }
                 case DEPUTY -> deputy = player;
@@ -102,7 +102,7 @@ public class Players implements PlayersForActionUpdater, PlayersForInet {
                     if (master != null && player.getId() == master.getId()) {
                         SnakesProto.GamePlayer prevMaster = player.toBuilder().setIpAddress(ip).build();
                         playerList.set(index, prevMaster);
-                        System.out.println("Players: updated prevMaster ip = " + prevMaster.getIpAddress());
+                        //System.out.println("Players: updated prevMaster ip = " + prevMaster.getIpAddress());
                     }
                 }
             }
@@ -136,11 +136,19 @@ public class Players implements PlayersForActionUpdater, PlayersForInet {
                 case DEPUTY -> {
                     if(player.getRole() == SnakesProto.NodeRole.MASTER){
                         listener.changeThisNodeRole(SnakesProto.NodeRole.MASTER, false);
-                        newPlayerIdCounter = playerList.size() + 1;
+                        int max = 0;
+                        for(SnakesProto.GamePlayer gamePlayer : playerList){
+                            if(max < gamePlayer.getId()) max = gamePlayer.getId();
+                        }
+                        newPlayerIdCounter = max + 1;
                         deletePlayer(playerId);
                         sendChangeRoleToAllPlayers(SnakesProto.NodeRole.MASTER);
                         findNewDeputy();
                     }
+                }
+                case NORMAL -> {
+                    deletePlayer(master.getId());
+                    changePlayerRole(deputy.getId(), SnakesProto.NodeRole.MASTER,false);
                 }
             }
         }
@@ -188,7 +196,7 @@ public class Players implements PlayersForActionUpdater, PlayersForInet {
                     master = playerList.get(index);
                     System.out.println("Players: changed master = " + playerId);
                 }
-                if (prevRole == SnakesProto.NodeRole.DEPUTY) {
+                if (prevRole == SnakesProto.NodeRole.DEPUTY && master.getId() == nodeId) {
                     findNewDeputy();
                 }
                 if (toNotify && player.getId() != nodeId) {

@@ -1,5 +1,6 @@
 package nsu.networks.snakes.model;
 
+import nsu.networks.snakes.model.players.FieldPoint;
 import nsu.networks.snakes.view.View;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class Presenter implements NodeListener {
 
     //Find a game in LAN
     public void findTheGame(String name, int port, SnakesProto.PlayerType type) {
-        node = new Node(this, name, port, type);
+        node = new Node(this, name, port, SnakesProto.PlayerType.HUMAN); //ROBOT is not available in current version of game
     }
 
     //Join the game in LAN by gameKey from gamesList
@@ -31,7 +32,7 @@ public class Presenter implements NodeListener {
 
     //Create new game
     private void createNewGame(SnakesProto.GameConfig config, String name, int port, SnakesProto.PlayerType type) {
-        node = new Node(this, name, port, type);
+        node = new Node(this, name, port, SnakesProto.PlayerType.HUMAN); //ROBOT is not available in current version of game
         node.createNewGame(config);
     }
 
@@ -80,7 +81,7 @@ public class Presenter implements NodeListener {
     }
 
     @Override
-    public void updateField(String field, List<String> scoresTable, String nodeRole) {
+    public void updateField(List<FieldPoint> field, List<String> scoresTable, String nodeRole) {
         view.updateGameView(field, scoresTable, nodeRole);
     }
 

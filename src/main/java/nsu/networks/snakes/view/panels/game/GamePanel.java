@@ -1,5 +1,6 @@
 package nsu.networks.snakes.view.panels.game;
 
+import nsu.networks.snakes.model.players.FieldPoint;
 import nsu.networks.snakes.view.ViewUtils;
 import nsu.networks.snakes.view.panels.WindowPanel;
 
@@ -85,7 +86,7 @@ public class GamePanel extends WindowPanel {
         repaint();
     }
 
-    public void updateGamePanel(String field, List<String> scoresTable, String nodeRole) {
+    public void updateGamePanel(List<FieldPoint> field, List<String> scoresTable, String nodeRole) {
         if(!this.nodeRole.equals(nodeRole)){
             this.nodeRole = nodeRole;
             updateRole(nodeRole);
@@ -93,6 +94,4 @@ public class GamePanel extends WindowPanel {
         fieldCellsPanel.updateField(field);
         updateScoresTable(scoresTable);
     }
-
-
 }

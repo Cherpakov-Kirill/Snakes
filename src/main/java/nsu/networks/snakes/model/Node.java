@@ -6,6 +6,7 @@ import nsu.networks.snakes.model.inet.InetController;
 import nsu.networks.snakes.model.inet.InetControllerListener;
 import nsu.networks.snakes.model.messages.AnnouncementMsg;
 import nsu.networks.snakes.model.actionUpdater.ActionUpdater;
+import nsu.networks.snakes.model.players.FieldPoint;
 import nsu.networks.snakes.model.players.Players;
 import nsu.networks.snakes.model.players.PlayersListener;
 
@@ -77,11 +78,7 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
                 startActionUpdater();
                 if (nodeRole != SnakesProto.NodeRole.MASTER) {
                     if (players.getNumberOfPlayers() > 0) {
-                        for (SnakesProto.GamePlayer player : players.getPlayersList()) {
-                            if (player.getRole() == SnakesProto.NodeRole.VIEWER) continue;
-                            int newPlayerId = player.getId();
-                            actionUpdater.addNewPlayer(newPlayerId);
-                        }
+                        actionUpdater.addAddSnakesToActionUpdater();
                         players.changePlayerRole(id, SnakesProto.NodeRole.MASTER, false);
                     }
                 }
@@ -186,7 +183,10 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
     @Override
     public void receiveRoleChangeMsg(SnakesProto.GameMessage.RoleChangeMsg roleChangeMsg, int senderId) {
         if (roleChangeMsg.getReceiverRole() != nodeRole) {
-            if (nodeRole != SnakesProto.NodeRole.MASTER) changeThisNodeRole(roleChangeMsg.getReceiverRole(), false);
+            if (nodeRole != SnakesProto.NodeRole.MASTER) {
+                changeThisNodeRole(roleChangeMsg.getReceiverRole(), false);
+                if(players.master.getId() != senderId) players.changePlayerRole(senderId, roleChangeMsg.getSenderRole(), false);
+            }
         } else {
             if (nodeRole == SnakesProto.NodeRole.MASTER) nodeBecameViewer(senderId);
             else players.changePlayerRole(senderId, roleChangeMsg.getSenderRole(), false);
@@ -258,7 +258,7 @@ public class Node implements GameCoreListener, PlayersListener, InetControllerLi
 
     //Update UI visualization of map
     @Override
-    public void updateField(String field) {
+    public void updateField(List<FieldPoint> field) {
         listener.updateField(field, players.getScores(), nodeRole.toString());
     }
 

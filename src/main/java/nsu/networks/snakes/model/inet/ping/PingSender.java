@@ -35,7 +35,7 @@ class PingSender extends Thread {
                 for (int id : new LinkedList<>(playersPingTime.keySet())) {
                     long now = (new Date()).getTime();
                     if (now - playersPingTime.get(id) > pingDelay) {
-                        System.out.println("Ping Sender id = " + id + " Delay = " + (now - playersPingTime.get(id)));
+                        //System.out.println("Ping Sender id = " + id + " Delay = " + (now - playersPingTime.get(id)));
                         listener.sendPing(id);
                     }
                 }

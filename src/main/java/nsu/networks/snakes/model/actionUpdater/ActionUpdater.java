@@ -30,7 +30,7 @@ public class ActionUpdater extends Thread {
     @Override
     public void run() {
         try {
-            Thread.sleep(stateDelay);
+            Thread.sleep(stateDelay/4);
             while (isAlive) {
                 makeActions();
                 players.initiateDeputyPLayer();
@@ -46,30 +46,28 @@ public class ActionUpdater extends Thread {
     }
 
     public void addAction(int playerId, SnakesProto.Direction direction) {
-        //synchronized (playersActions) {
             playersActions.put(playerId, direction);
-        //}
+    }
+
+    public void addAddSnakesToActionUpdater(){
+        for(int id : gameCore.getListOfSnakesId()){
+            addNewPlayer(id);
+        }
     }
 
     public void addNewPlayer(int newPlayerId) {
-        //synchronized (playersActions) {
             SnakesProto.Direction playerSnakeDirection = gameCore.getSnakeDirection(newPlayerId);
             playersActions.put(newPlayerId, playerSnakeDirection);
-        //}
     }
 
     public void removePlayer(int playerId) {
-        //synchronized (playersActions) {
             playersActions.remove(playerId);
-        //}
     }
 
     private void makeActions() {
-        //synchronized (playersActions) {
             for (int idPLayer : new LinkedList<>(playersActions.keySet())) {
                 gameCore.makeAction(idPLayer, playersActions.get(idPLayer));
             }
-        //}
         gameCore.updateField();
     }
 }

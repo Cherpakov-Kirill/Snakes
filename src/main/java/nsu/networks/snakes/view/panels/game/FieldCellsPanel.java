@@ -1,11 +1,14 @@
 package nsu.networks.snakes.view.panels.game;
 
+import nsu.networks.snakes.model.SnakesProto;
+import nsu.networks.snakes.model.players.FieldPoint;
 import nsu.networks.snakes.view.windows.MainWindow;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.URL;
+import java.util.List;
 
 import static nsu.networks.snakes.view.ViewUtils.getPart;
 
@@ -21,7 +24,6 @@ public class FieldCellsPanel extends JPanel {
     private final int fieldHeight;
     private final int cellSize;
     private final CellPanel[][] cells;
-    private final int cellsNum;
 
     public FieldCellsPanel(int cellSize, int widthField, int heightField) {
         this.width = cellSize * widthField;
@@ -49,23 +51,17 @@ public class FieldCellsPanel extends JPanel {
                 this.add(cells[y][x]);
             }
         }
-        String  fieldString = "-".repeat(fieldHeight * fieldWidth);
-        cellsNum = widthField * heightField;
-        updateField(fieldString);
     }
 
-    public void updateField(String newFieldString) {
-        for (int i = 0; i < cellsNum; i++) {
-            char newSym = newFieldString.charAt(i);
-                int y = i / fieldWidth;
-                int x = i % fieldWidth;
-                switch (newSym) {
-                    case '-' -> cells[y][x].changeBackground(empty);
-                    case '.' -> cells[y][x].changeBackground(empty);
-                    case '#' -> cells[y][x].changeBackground(aliveOtherSnake);
-                    case '&' -> cells[y][x].changeBackground(aliveNodeSnake);
-                    case '*' -> cells[y][x].changeBackground(food);
-                }
+    public void updateField(List<FieldPoint> fieldPoints) {
+        for(FieldPoint fp : fieldPoints){
+            SnakesProto.GameState.Coord coordinate = fp.coordinate();
+            switch (fp.sym()) {
+                case '-', '.' -> cells[coordinate.getY()][coordinate.getX()].changeBackground(empty);
+                case '#' -> cells[coordinate.getY()][coordinate.getX()].changeBackground(aliveOtherSnake);
+                case '&' -> cells[coordinate.getY()][coordinate.getX()].changeBackground(aliveNodeSnake);
+                case '*' -> cells[coordinate.getY()][coordinate.getX()].changeBackground(food);
+            }
         }
     }
 
