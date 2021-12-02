@@ -70,9 +70,10 @@ public class UnicastReceiver extends Thread {
         try {
             System.out.println("Unicast Receiver started");
             while (!isInterrupted()) {
-                byte[] buffer = new byte[256];
+                byte[] buffer = new byte[2048];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
+                //System.out.println("Received "+packet.getLength()+" bytes");
                 byte[] gotBytes = new byte[packet.getLength()];
                 System.arraycopy(buffer, 0, gotBytes, 0, packet.getLength());
                 SnakesProto.GameMessage msg = SnakesProto.GameMessage.parseFrom(gotBytes);
